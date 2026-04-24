@@ -1,0 +1,78 @@
+key,issueType,summary,status,project,priority,assignee,reporter,storyPoints,created,updated,due,featureLink,sprint
+PGM-1,Epic,Client A Platform Migration (legacy to modern),In Progress,PGM,High,dev-01,dev-01,,2026-01-23,2026-04-23,2026-06-22,,
+PNR-806,Story,Client A Migration (Legacy Platform to Modern Platform) - Site of Care (SoC) - [Carriers Web],Refinement,PNR,Low,dev-01,dev-01,1.0,2026-03-28,2026-03-28,,PGM-1,
+PNR-802,Story,Client A Migration (Legacy Platform to Modern Platform) - Turnaround Times/ Case Save Logic - [Carriers Web],Ready for Refinement,PNR,Low,dev-01,dev-02,1.0,2026-03-22,2026-03-22,,PGM-1,
+PNR-801,Story,Client A Migration (Legacy Platform to Modern Platform) - BLCP Indicator Pathway - CW - QA Only,Ready to Work,PNR,Low,dev-03,dev-02,1.0,2026-03-22,2026-03-22,,PGM-1,
+PNR-764,Story,Client A Migration (Legacy Platform to Modern Platform) - Ordering Provider OON Auto Exclusion (CW),Ready to Work,PNR,Low,dev-04,dev-02,0.0,2026-02-20,2026-03-22,,PGM-1,
+PNR-763,Story,Client A Migration (Legacy Platform to Modern Platform) - MMVAP - CW,Ready for Refinement,PNR,Low,dev-01,dev-02,0.0,2026-02-20,2026-03-17,,PGM-1,
+PNR-762,Story,Client A Migration (Legacy Platform to Modern Platform) - Program Specific Rules - MSK Pain & Joint (CW),Working,PNR,Low,dev-05,dev-02,2.0,2026-02-11,2026-03-28,,PGM-1,Panthers Sprint 26.2.3
+PNR-761,Story,Client A Migration (Legacy Platform to Modern Platform) - Program Specific Rules - Cardiology/Radiology (CW),Ready to Work,PNR,Low,dev-05,dev-02,2.0,2026-02-11,2026-03-28,,PGM-1,Panthers Sprint 26.2.3
+PNR-760,Story,Client A Migration (Legacy Platform to Modern Platform) - Self Referring Logic (CW) - QA Only,Ready to Work,PNR,Low,dev-01,dev-02,0.0,2026-01-28,2026-03-17,,PGM-1,
+PNR-759,Story,Client A Migration (Legacy Platform to Modern Platform) - Place of Service (CW) - QA Only,Ready to Work,PNR,Low,dev-01,dev-02,0.0,2026-01-28,2026-03-22,,PGM-1,
+PNR-758,Story,Client A Migration (Legacy Platform to Modern Platform) - FTSA (PSMND),Ready for Refinement,PNR,Low,,dev-06,0.0,2026-02-10,2026-03-17,,PGM-1,
+PNR-757,Story,Client A Migration (Legacy Platform to Modern Platform) - Site Selection (CW),Working,PNR,Low,dev-04,dev-02,3.0,2026-01-24,2026-03-22,,PGM-1,Panthers Sprint 26.2.3
+PNR-755,Story,"Client A Migration (Legacy Platform to Modern Platform) - CAR,RAD,MSK - Member Eligibility Scenerios (CW) - Code",Working,PNR,Low,dev-07,dev-02,2.0,2026-01-23,2026-03-27,,PGM-1,Panthers Sprint 26.2.3
+PNR-754,Story,"Client A Migration (Legacy Platform to Modern Platform) - CAR,RAD,MSK - Member Eligibility Messaging (CW) - Config",Ready for QA,PNR,Low,dev-07,dev-02,1.0,2026-02-20,2026-03-28,,PGM-1,Panthers Sprint 26.2.3
+TSU-1276,Story,Client A Migration (Legacy Platform to Modern Platform) - Program Specific Rules - Card/Rad/MSK (Modern Platform) - Type1/Type 2 NPI Selection,In Development,TSU,Low,dev-08,dev-06,3.0,2026-03-23,2026-03-28,,PGM-1,TSU Sprint 26.2.3
+TSU-1263,Story,Client A Migration (Legacy Platform to Modern Platform) - Site of Care (SoC) - Workflow DB Changes,In Development,TSU,Low,dev-09,dev-06,5.0,2026-03-21,2026-03-28,,PGM-1,TSU Sprint 26.2.3
+TSU-1254,Story,Client A Migration (Legacy Platform to Modern Platform) - Site of Care (SoC) - Exceptions (Modern Platform),Ready to Work,TSU,Low,dev-09,dev-06,5.0,2026-03-21,2026-03-28,,PGM-1,TSU Sprint 26.2.4
+TSU-1246,Story,Spike - Client A Migration (Legacy Platform to Modern Platform) - FDX Auto Approval & Exception,Done,TSU,Low,dev-10,dev-06,2.0,2026-03-16,2026-03-24,,PGM-1,TSU Sprint 26.2.3
+TSU-1223,Story,Client A Migration (Legacy Platform to Modern Platform) - MMVAP - Configuration,Ready to Accept,TSU,Low,dev-06,dev-06,1.0,2026-03-15,2026-03-27,,PGM-1,TSU Sprint 26.2.3
+TSU-1222,Story,"Client A Migration (Legacy Platform to Modern Platform) - CAR,RAD,MSK - Member Eligibility Messaging (Modern Platform) - (eviConfig) - QA Testing",To Do,TSU,Low,dev-11,dev-06,1.0,2026-03-15,2026-03-20,,PGM-1,
+TSU-1221,Story,Client A Migration (Legacy Platform to Modern Platform) - Ordering Provider OON Auto Exclusion (Modern Platform) - QA Testing,To Do,TSU,Low,dev-12,dev-06,3.0,2026-03-15,2026-03-15,,PGM-1,
+TSU-1220,Story,"Client A Migration (Legacy Platform to Modern Platform) - CAR,RAD,MSK - Member Eligibility Scenerios (Modern Platform)  - Retro Scenerio",In Development,TSU,Low,dev-10,dev-06,2.0,2026-03-15,2026-03-24,,PGM-1,TSU Sprint 26.2.3
+TSU-1219,Story,"Client A Migration (Legacy Platform to Modern Platform) - CAR,RAD,MSK - Member Eligibility Scenerios (Modern Platform)  - QA Testing",To Do,TSU,Low,dev-06,dev-06,5.0,2026-03-15,2026-03-20,,PGM-1,
+TSU-1218,Story,Client A Migration (Legacy Platform to Modern Platform) - Auth Error Reconciliation - Export Override Tool Changes - QA Testing,To Do,TSU,Low,dev-09,dev-06,1.0,2026-03-15,2026-03-20,,PGM-1,
+TSU-1217,Story,Client A Migration (Legacy Platform to Modern Platform) - Site Selection (Modern Platform) - QA Test Prep,Ready for QA,TSU,Low,dev-12,dev-06,3.0,2026-03-15,2026-03-28,,PGM-1,TSU Sprint 26.2.3
+TSU-1208,Story,Client A Migration (Legacy Platform to Modern Platform) - Auth Error Reconciliation - Enable OBRT Queue -  (eviConfig) - QA Only,To Do,TSU,Low,dev-11,dev-06,2.0,2026-03-15,2026-03-20,,PGM-1,
+TSU-1207,Story,Client A Migration (Legacy Platform to Modern Platform) - Program Specific Rules - Cardiology/Radiology (Modern Platform) - QA Only,To Do,TSU,Low,dev-13,dev-06,5.0,2026-03-15,2026-03-20,,PGM-1,
+TSU-1190,Story,Client A Migration (Legacy Platform to Modern Platform) - Legacy Platform SQL - Details about a case (using an SOID),Working,TSU,Low,dev-14,dev-06,20.0,2026-02-03,2026-03-15,,PGM-1,TSU Sprint 26.2.3
+TSU-1133,Story,Client A Migration (Legacy Platform to Modern Platform) - Site Selection (Modern Platform) - Additional Requirement,In Development,TSU,Low,dev-09,dev-06,3.0,2026-03-09,2026-03-27,,PGM-1,TSU Sprint 26.2.3
+TSU-1060,Story,Client A Migration (Legacy Platform to Modern Platform) - Add Company ID 3 - QA Testing,Ready to Work,TSU,Low,,dev-06,2.0,2026-03-06,2026-03-20,,PGM-1,TSU Sprint 26.2.4
+TSU-1034,Story,Client A Migration (Legacy Platform to Modern Platform) - Site of Care (SoC) - Widget Configuration,In Development,TSU,Low,dev-10,dev-06,3.0,2026-03-02,2026-03-28,,PGM-1,TSU Sprint 26.2.3
+TSU-1023,Story,"Client A Migration (Legacy Platform to Modern Platform) - CPT Code Load (Radiology, Cardiology) - Tracker CPT Load",Ready to Work,TSU,Low,,dev-06,0.0,2026-02-28,2026-03-14,,PGM-1,
+TSU-1022,Story,Client A Migration (Legacy Platform to Modern Platform) - Enable Fax Case Creation - (eviConfig),Ready to Work,TSU,Low,,dev-06,0.0,2026-02-28,2026-03-15,,PGM-1,TSU Sprint 26.2.4
+TSU-1021,Story,Client A Migration (Legacy Platform to Modern Platform) - Plan Code Configurations (Modern Platform) - (eviConfig),Ready to Work,TSU,Low,,dev-06,0.0,2026-02-28,2026-03-15,,PGM-1,TSU Sprint 26.2.4
+TSU-1019,Story,Client A Migration (Legacy Platform to Modern Platform) - Health Plan Configuration (Modern Platform) - (eviConfig),Ready to Work,TSU,Low,,dev-06,0.0,2026-02-28,2026-03-15,,PGM-1,TSU Sprint 26.2.4
+TSU-1009,Story,Client A Migration (Legacy Platform to Modern Platform) - Turnaround Times/ Case Save Logic - Turnaround Time (TAT) Rule Configuration - QA Test Prep,Ready for QA,TSU,Low,dev-12,dev-06,3.0,2026-02-28,2026-03-28,,PGM-1,TSU Sprint 26.2.3
+TSU-1008,Story,Client A Migration (Legacy Platform to Modern Platform) - Turnaround Times/ Case Save Logic - T Priority 0days- Code change (CW),To Do,TSU,Low,,dev-06,1.0,2026-02-28,2026-03-15,,PGM-1,
+TSU-1007,Story,Client A Migration (Legacy Platform to Modern Platform) - Turnaround Times/ Case Save Logic - T Priority 0days- Code change (Modern Platform),In Development,TSU,Low,dev-08,dev-06,2.0,2026-02-28,2026-03-28,,PGM-1,TSU Sprint 26.2.3
+TSU-1002,Story,Client A Migration (Legacy Platform to Modern Platform) - Site Selection - Site Change,Ready for Refinement,TSU,Low,,dev-06,0.0,2026-02-27,2026-03-28,,PGM-1,
+TSU-998,Story,Client A Migration (Legacy Platform to Modern Platform) - CSN & SOC Rules -Modern Platform,To Do,TSU,Low,,dev-06,0.0,2026-02-27,2026-03-20,,PGM-1,
+TSU-996,Story,Client A Migration (Legacy Platform to Modern Platform) - Bay Care Auto Exclusion -Modern Platform - QA Only,Ready to Work,TSU,Low,,dev-06,0.0,2026-02-27,2026-03-14,,PGM-1,
+TSU-989,Story,Client A Migration (Legacy Platform to Modern Platform) - SARS Membership -Modern Platform - QA Only,Ready to Work,TSU,Low,,dev-06,0.0,2026-02-27,2026-03-14,,PGM-1,
+TSU-988,Story,Client A Migration (Legacy Platform to Modern Platform) - Mayo Clinic Exclusions -Modern Platform - QA Only,Ready to Work,TSU,Low,,dev-06,0.0,2026-02-27,2026-03-20,,PGM-1,
+TSU-951,Story,Client A Migration (Legacy Platform to Modern Platform) - Site of Care (SoC) - Workflow (CW),To Do,TSU,Low,,dev-06,0.0,2026-02-22,2026-03-13,,PGM-1,
+TSU-950,Story,Client A Migration (Legacy Platform to Modern Platform) - Site of Care (SoC) - Workflow (Modern Platform),Ready to Accept,TSU,Low,dev-09,dev-06,5.0,2026-02-22,2026-03-27,,PGM-1,TSU Sprint 26.2.3
+TSU-949,Story,Client A Migration (Legacy Platform to Modern Platform) - Program Specific Rules - Site Of Care (SOC) - CW,To Do,TSU,Low,,dev-06,0.0,2026-02-22,2026-03-13,,PGM-1,
+TSU-895,Story,Client A Migration (Legacy Platform to Modern Platform) - Analysis on CSN Workflow,In Development,TSU,Low,dev-13,dev-06,1.0,2026-02-14,2026-03-28,,PGM-1,
+TSU-890,Story,Client A Migration (Legacy Platform to Modern Platform) - Program Specific Rules - Site Of Care (SOC) - Modern Platform,Ready to Work,TSU,Low,,dev-06,0.0,2026-02-11,2026-03-23,,PGM-1,
+TSU-889,Story,Client A Migration (Legacy Platform to Modern Platform) - Program Specific Rules (Modern Platform) - Informed Choice,Ready to Work,TSU,Low,,dev-06,0.0,2026-02-11,2026-03-28,,PGM-1,TSU Sprint 26.2.4
+TSU-887,Story,Client A Migration (Legacy Platform to Modern Platform) - Program Specific Rules - MSK Pain & Joint (Modern Platform),Ready to Work,TSU,Low,,dev-06,0.0,2026-02-11,2026-03-28,,PGM-1,
+TSU-879,Story,Client A Migration (Legacy Platform to Modern Platform) - Ordering Provider OON Auto Exclusion (Modern Platform),Done,TSU,Low,dev-10,dev-06,3.0,2026-02-10,2026-03-21,,PGM-1,TSU Sprint 26.2.2
+TSU-822,Story,Client A Migration (Legacy Platform to Modern Platform) - Program Specific Rules - Cardiology/Radiology (Modern Platform),Done,TSU,Low,dev-06,dev-06,5.0,2026-02-02,2026-03-28,,PGM-1,TSU Sprint 26.2.2
+TSU-765,Story,Client A Migration (Legacy Platform to Modern Platform) - Historical Auth changes,Ready to Work,TSU,Low,,dev-06,0.0,2026-01-30,2026-03-20,,PGM-1,
+TSU-758,Story,Client A Migration (Legacy Platform to Modern Platform) - Gold & Silver Carding (Auto Approval) - Modern Platform - QA ONLY,Ready to Work,TSU,Low,,dev-06,0.0,2026-01-28,2026-03-20,,PGM-1,
+TSU-757,Story,Client A Migration (Legacy Platform to Modern Platform) - Partial Case Creation (PCC) -  Intellipath Support - Config,Ready for QA,TSU,Low,dev-08,dev-06,1.0,2026-01-28,2026-03-28,,PGM-1,TSU Sprint 26.2.3
+TSU-754,Story,Client A Migration (Legacy Platform to Modern Platform) - Self Referring Logic (Modern Platform) - QA Only,Ready to Work,TSU,Low,,dev-06,0.0,2026-01-28,2026-03-20,,PGM-1,TSU Sprint 26.2.5
+TSU-753,Story,Client A Migration (Legacy Platform to Modern Platform) - MMVAP - Modern Platform,Done,TSU,Low,dev-13,dev-06,5.0,2026-01-28,2026-03-21,,PGM-1,TSU Sprint 26.2.2
+TSU-751,Story,Client A Migration (Legacy Platform to Modern Platform) - Place of Service (Modern Platform) - QA Only,Ready to Work,TSU,Low,,dev-06,0.0,2026-01-28,2026-03-20,,PGM-1,TSU Sprint 26.2.5
+TSU-729,Story,Client A Migration (Legacy Platform to Modern Platform) - App Dev Team Support - Engineering Solutioning,Done,TSU,Low,dev-06,dev-06,1.0,2026-01-26,2026-02-20,,PGM-1,TSU Sprint 26.1.5
+TSU-688,Story,Client A Migration (Legacy Platform to Modern Platform) - Site Selection (Modern Platform),Done,TSU,Low,dev-06,dev-06,3.0,2026-01-24,2026-03-21,,PGM-1,TSU Sprint 26.2.2
+TSU-682,Story,Client A Migration (Legacy Platform to Modern Platform) - Auth Error Reconciliation - Export Override Tool Changes,Done,TSU,Low,dev-06,dev-06,1.0,2026-01-24,2026-03-21,,PGM-1,TSU Sprint 26.2.2
+TSU-681,Story,Client A Migration (Legacy Platform to Modern Platform) - Auth Error Reconciliation - Enable OBRT Queue -  (eviConfig),Done,TSU,Low,dev-11,dev-06,2.0,2026-01-24,2026-03-21,,PGM-1,TSU Sprint 26.2.2
+TSU-670,Story,"Client A Migration (Legacy Platform to Modern Platform) - CAR,RAD,MSK - Member Eligibility Messaging (Modern Platform) - (eviConfig)",Done,TSU,Low,dev-11,dev-06,1.0,2026-01-23,2026-03-21,,PGM-1,TSU Sprint 26.2.2
+TSU-668,Story,"Client A Migration (Legacy Platform to Modern Platform) - CAR,RAD,MSK - Member Eligibility Scenerios (Modern Platform)",Done,TSU,Low,dev-06,dev-06,5.0,2026-01-23,2026-03-21,,PGM-1,TSU Sprint 26.2.2
+ISC-296,Story,Research/Analysis work for Message Catalog :To identify different workflows for different messages,Ready to Work,ISC,Medium,dev-15,dev-16,3.0,2026-03-24,2026-03-28,2026-01-25,PGM-1,ISC Sprint 26.2.3
+ISC-256,Story,Legacy Platform  to Modern Platform Migration : SOC exempt provider flag,Done,ISC,Low,dev-15,dev-16,2.0,2026-02-22,2026-03-02,2026-04-26,PGM-1,ISC Sprint 26.2.2
+ISC-255,Story,Request to Verify Legacy Platform Facility Availability,Done,ISC,Low,dev-15,dev-16,1.0,2026-02-22,2026-02-23,2026-04-26,PGM-1,ISC Sprint 26.2.1
+ISC-229,Story,Legacy Platform To Modern Platform Migration: Appdev to do analysis on SOC Member Exclusion Logic,Done,ISC,Medium,dev-17,dev-16,1.0,2026-02-08,2026-02-14,2026-01-25,PGM-1,ISC Sprint 26.2.1
+ISC-219,Story,Analysis of Pediatric Echocardiogram Auto Approval,Done,ISC,Low,dev-15,dev-18,1.0,2026-02-03,2026-02-20,,PGM-1,ISC Sprint 26.2.3
+ISC-206,Story,CPT codes for Privileging,Done,ISC,Low,dev-19,dev-19,3.0,2026-01-27,2026-03-13,2026-04-26,PGM-1,ISC Sprint 26.2.2
+ISC-200,Story,Legacy Platform to Modern Platform Migration:  SME Support,Done,ISC,Low,dev-14,dev-16,3.0,2026-01-27,2026-03-17,2026-04-26,PGM-1,
+ISC-194,Story,Legacy Platform - Develop and Run Query to identify all programs with active Nuclear Cardiology CPTs,Done,ISC,Medium,dev-15,dev-18,3.0,2026-01-20,2026-03-24,2026-01-25,PGM-1,ISC Sprint 26.2.4
+ISC-190,Story,Legacy Platform to Modern Platform Migration:   Validation of Steerage.FacilityPayerCPT table in Cigna Workflow,Done,ISC,Low,dev-19,dev-20,3.0,2026-01-20,2026-03-08,,PGM-1,ISC Sprint 26.1.5
+ISC-183,Story,Legacy Platform to Modern Platform Migration:  ABH AZ - Data Elements for Letter Generation,To Do,ISC,Low,,dev-20,3.0,2026-01-17,2026-03-16,2026-04-26,PGM-1,Sprint 26.2.5
+ISC-182,Story,Legacy Platform to Modern Platform Migration: Employee Privacy -  Provide the Message for Competency-SME Support,Done,ISC,Low,dev-14,dev-20,3.0,2026-01-17,2026-03-08,2026-03-07,PGM-1,ISC Sprint 26.2.1
+ISC-180,Story,Legacy Platform to Modern Platform Migration: Research for Retro Cases - Date of Service,Done,ISC,Low,dev-21,dev-20,3.0,2026-01-17,2026-03-21,,PGM-1,ISC Sprint 26.2.2
+ISC-146,Story,Legacy Platform to Modern Platform Migrations: To provide list of active clients on Legacy Platform Platform,Done,ISC,Low,dev-19,dev-16,3.0,2025-12-16,2026-03-08,,PGM-1,Sprint 26.1.2
