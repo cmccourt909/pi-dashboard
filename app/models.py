@@ -40,7 +40,16 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship,
 
 class Base(DeclarativeBase):
     pass
+class Organization(Base):
+    """A delivery organization. One org can have multiple Jira instances (sites)."""
+    __tablename__ = "organization"
 
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    sites: Mapped[list["Site"]] = relationship(back_populates="org")
+    program_increments: Mapped[list["ProgramIncrement"]] = relationship(back_populates="org")
 
 # ---------- enums ----------
 
@@ -79,7 +88,8 @@ class Site(Base):
 
     field_mappings: Mapped[list["FieldMapping"]] = relationship(back_populates="site")
     projects: Mapped[list["Project"]] = relationship(back_populates="site")
-
+    org_id: Mapped[Optional[int]] = mapped_column(ForeignKey("organization.id"), nullable=True)
+    org: Mapped[Optional["Organization"]] = relationship(back_populates="sites")
 
 class FieldMapping(Base):
     """
@@ -119,7 +129,22 @@ class RawIssueSnapshot(Base):
 
 
 # ---------- normalized current state ----------
+class ProgramIncrement(Base):
+    """
+    A named planning interval (e.g. '26.2') belonging to an organization.
+    Scoped to org, not site — a PI spans all Jira instances for that org.
+    """
+    __tablename__ = "program_increment"
+    __table_args__ = (UniqueConstraint("org_id", "name"),)
 
+    id: Mapped[int] = mapped_column(primary_key=True)
+    org_id: Mapped[int] = mapped_column(ForeignKey("organization.id"), nullable=False)
+    name: Mapped[str] = mapped_column(String(50), nullable=False)   # "26.2"
+    start_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    end_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    org: Mapped["Organization"] = relationship(back_populates="program_increments")
+    sprints: Mapped[list["Sprint"]] = relationship(back_populates="pi")
 class Project(Base):
     __tablename__ = "project"
     __table_args__ = (UniqueConstraint("site_id", "jira_key"),)
@@ -148,6 +173,8 @@ class Sprint(Base):
     end_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     project: Mapped[Project] = relationship(back_populates="sprints")
+    pi_id: Mapped[Optional[int]] = mapped_column(ForeignKey("program_increment.id"), nullable=True)
+    pi: Mapped[Optional["ProgramIncrement"]] = relationship(back_populates="sprints")
 
 
 class Issue(Base):
