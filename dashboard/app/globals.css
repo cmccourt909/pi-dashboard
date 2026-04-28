@@ -1,31 +1,40 @@
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Barlow+Condensed:wght@300;400;600;700&family=Barlow:wght@400;500&display=swap");
 
 :root {
-  /* Palette — dark industrial */
-  --bg:            #0a0c0f;
-  --bg-panel:      #0f1318;
-  --bg-card:       #141820;
-  --bg-hover:      #1a2030;
-  --border:        #1e2a38;
-  --border-strong: #2a3a50;
+  /* Palette — soft blue-gray */
+  --bg:            #f0f4f8;
+  --bg-panel:      #ffffff;
+  --bg-card:       #f7f9fb;
+  --bg-hover:      #eef2f7;
+  --border:        #d0dae6;
+  --border-strong: #b0bfcc;
 
   /* Text */
-  --text-primary:   #e8edf5;
-  --text-secondary: #6a7d96;
-  --text-muted:     #3a4d62;
+  --text-primary:   #0f1e2e;
+  --text-secondary: #2e4a60;
+  --text-muted:     #6a8aa0;
 
   /* Status */
-  --status-healthy:  #22c55e;
-  --status-warning:  #f59e0b;
-  --status-critical: #ef4444;
+  --status-healthy:  #1a7f4b;
+  --status-warning:  #a05c00;
+  --status-critical: #c0392b;
   --status-unknown:  #6b7280;
 
-  /* Accent */
-  --accent:      #3b82f6;
-  --accent-glow: #3b82f640;
+  /* Status backgrounds (for badges) */
+  --status-healthy-bg:  #e6f5ec;
+  --status-healthy-border: #b3dfc3;
+  --status-warning-bg:  #fff3e0;
+  --status-warning-border: #ffd699;
+  --status-critical-bg: #fdecea;
+  --status-critical-border: #f5b7b1;
+
+  /* Accent — Jira blue */
+  --accent:      #0052cc;
+  --accent-light: #e8f0fb;
+  --accent-glow: #0052cc20;
 
   /* Progress track */
-  --track-bg: #1a2030;
+  --track-bg: #dce6f0;
 
   /* Typography */
   --font-display: "Barlow Condensed", sans-serif;
@@ -43,19 +52,14 @@ html {
   background: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-body);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
 body {
   min-height: 100vh;
-  /* Subtle grid texture */
-  background-image:
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 48px 48px;
-  background-position: -1px -1px;
+  background: var(--bg);
 }
 
 a {
@@ -73,19 +77,19 @@ a {
 .panel {
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 .card {
-  background: var(--bg-card);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  transition: border-color 0.15s, background 0.15s;
+  border-radius: 6px;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .card:hover {
   border-color: var(--border-strong);
-  background: var(--bg-hover);
+  box-shadow: 0 2px 8px rgba(0, 82, 204, 0.08);
 }
 
 .mono {

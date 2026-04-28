@@ -2,26 +2,37 @@ import React from "react";
 
 type Status = "healthy" | "warning" | "critical" | "unknown";
 
-const CONFIG: Record<Status, { label: string; color: string; dot: string }> = {
+const CONFIG: Record<
+  Status,
+  { label: string; color: string; bg: string; border: string; dot: string }
+> = {
   healthy: {
     label: "HEALTHY",
     color: "var(--status-healthy)",
-    dot: "#22c55e",
+    bg: "var(--status-healthy-bg)",
+    border: "var(--status-healthy-border)",
+    dot: "var(--status-healthy)",
   },
   warning: {
     label: "AT RISK",
     color: "var(--status-warning)",
-    dot: "#f59e0b",
+    bg: "var(--status-warning-bg)",
+    border: "var(--status-warning-border)",
+    dot: "var(--status-warning)",
   },
   critical: {
     label: "CRITICAL",
     color: "var(--status-critical)",
-    dot: "#ef4444",
+    bg: "var(--status-critical-bg)",
+    border: "var(--status-critical-border)",
+    dot: "var(--status-critical)",
   },
   unknown: {
     label: "UNKNOWN",
-    color: "var(--status-unknown)",
-    dot: "#6b7280",
+    color: "var(--text-muted)",
+    bg: "var(--bg-card)",
+    border: "var(--border)",
+    dot: "var(--text-muted)",
   },
 };
 
@@ -41,14 +52,14 @@ export default function HealthBadge({ status, size = "md" }: Props) {
         alignItems: "center",
         gap: isSmall ? "4px" : "6px",
         padding: isSmall ? "2px 7px" : "3px 10px",
-        border: `1px solid ${cfg.color}`,
+        border: `1px solid ${cfg.border}`,
         color: cfg.color,
         fontSize: isSmall ? "9px" : "10px",
         fontFamily: "var(--font-mono)",
         fontWeight: 700,
-        letterSpacing: "0.12em",
-        borderRadius: "2px",
-        background: `color-mix(in srgb, ${cfg.color} 10%, transparent)`,
+        letterSpacing: "0.1em",
+        borderRadius: "3px",
+        background: cfg.bg,
       }}
     >
       <span
@@ -58,7 +69,6 @@ export default function HealthBadge({ status, size = "md" }: Props) {
           borderRadius: "50%",
           background: cfg.dot,
           flexShrink: 0,
-          boxShadow: `0 0 4px ${cfg.dot}`,
         }}
       />
       {cfg.label}

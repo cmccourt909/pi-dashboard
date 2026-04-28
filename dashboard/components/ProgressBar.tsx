@@ -11,14 +11,14 @@ const STATUS_COLORS: Record<string, string> = {
   healthy: "var(--status-healthy)",
   warning: "var(--status-warning)",
   critical: "var(--status-critical)",
-  unknown: "var(--status-unknown)",
+  unknown: "var(--accent)",
 };
 
 export default function ProgressBar({
   value,
   status = "unknown",
   showLabel = true,
-  height = 6,
+  height = 5,
 }: Props) {
   const clamped = Math.max(0, Math.min(100, value));
   const color = STATUS_COLORS[status] ?? STATUS_COLORS.unknown;
@@ -30,7 +30,7 @@ export default function ProgressBar({
           flex: 1,
           height,
           background: "var(--track-bg)",
-          borderRadius: 2,
+          borderRadius: 3,
           overflow: "hidden",
           position: "relative",
         }}
@@ -41,9 +41,8 @@ export default function ProgressBar({
             inset: 0,
             right: `${100 - clamped}%`,
             background: color,
-            borderRadius: 2,
-            transition: "right 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
-            boxShadow: clamped > 0 ? `0 0 8px ${color}60` : "none",
+            borderRadius: 3,
+            transition: "right 0.5s ease",
           }}
         />
       </div>

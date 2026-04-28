@@ -25,24 +25,24 @@ export default function NavLinks() {
               fontWeight: 600,
               letterSpacing: "0.1em",
               color: active
-                ? "var(--text-primary)"
+                ? "var(--accent)"
                 : muted
                 ? "var(--text-muted)"
                 : "var(--text-secondary)",
               textTransform: "uppercase",
               padding: "4px 0",
-              borderBottom: "1px solid " + (active ? "var(--accent)" : "transparent"),
+              borderBottom: `2px solid ${active ? "var(--accent)" : "transparent"}`,
               transition: "color 0.15s, border-color 0.15s",
             }}
             onMouseEnter={(e) => {
               const el = e.currentTarget as HTMLAnchorElement;
-              el.style.color = "var(--text-primary)";
+              el.style.color = "var(--accent)";
               el.style.borderBottomColor = "var(--accent)";
             }}
             onMouseLeave={(e) => {
               const el = e.currentTarget as HTMLAnchorElement;
               el.style.color = active
-                ? "var(--text-primary)"
+                ? "var(--accent)"
                 : muted
                 ? "var(--text-muted)"
                 : "var(--text-secondary)";
