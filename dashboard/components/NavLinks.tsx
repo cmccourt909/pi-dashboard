@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 const LINKS = [
   { href: "/", label: "PI Overview" },
   { href: "/features", label: "Features" },
+  { href: "/admin", label: "Admin", muted: true },
 ];
 
 export default function NavLinks() {
@@ -12,7 +13,7 @@ export default function NavLinks() {
 
   return (
     <nav style={{ display: "flex", gap: 24 }}>
-      {LINKS.map(({ href, label }) => {
+      {LINKS.map(({ href, label, muted }) => {
         const active = pathname === href;
         return (
           <a
@@ -23,7 +24,11 @@ export default function NavLinks() {
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: "0.1em",
-              color: active ? "var(--text-primary)" : "var(--text-secondary)",
+              color: active
+                ? "var(--text-primary)"
+                : muted
+                ? "var(--text-muted)"
+                : "var(--text-secondary)",
               textTransform: "uppercase",
               padding: "4px 0",
               borderBottom: "1px solid " + (active ? "var(--accent)" : "transparent"),
@@ -36,7 +41,11 @@ export default function NavLinks() {
             }}
             onMouseLeave={(e) => {
               const el = e.currentTarget as HTMLAnchorElement;
-              el.style.color = active ? "var(--text-primary)" : "var(--text-secondary)";
+              el.style.color = active
+                ? "var(--text-primary)"
+                : muted
+                ? "var(--text-muted)"
+                : "var(--text-secondary)";
               el.style.borderBottomColor = active ? "var(--accent)" : "transparent";
             }}
           >
