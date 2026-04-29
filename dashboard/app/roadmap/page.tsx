@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { API_BASE } from "@/lib/api";
 
 interface RoadmapFeature {
@@ -44,6 +44,142 @@ const STATUS_CFG: Record<string, { bar: string; bg: string; border: string; text
 };
 
 const fallbackCfg = STATUS_CFG["Unknown"];
+
+// ── Tooltip ───────────────────────────────────────────────────────────────────
+
+interface TooltipState {
+  feature: RoadmapFeature;
+  x: number;
+  y: number;
+}
+
+function Tooltip({ tip }: { tip: TooltipState }) {
+  const { feature } = tip;
+  const cfg    = STATUS_CFG[feature.status] ?? fallbackCfg;
+  const atRisk = isAtRisk(feature);
+
+  const daysLeft = feature.target_end_date
+    ? Math.round((new Date(feature.target_end_date).getTime() - TODAY.getTime()) / 86400000)
+    : null;
+
+  const assigneeShort = feature.assignee
+    ? feature.assignee.split(",")[0].trim()
+    : "Unassigned";
+
+  // Position: prefer right of cursor, flip left if near right edge
+  const TOOLTIP_W = 260;
+  const left = tip.x + 16 + TOOLTIP_W > window.innerWidth
+    ? tip.x - TOOLTIP_W - 8
+    : tip.x + 16;
+  const top = tip.y - 8;
+
+  return (
+    <div style={{
+      position: "fixed",
+      left,
+      top,
+      width: TOOLTIP_W,
+      background: "var(--bg-panel)",
+      border: `1px solid ${atRisk ? "#fca5a5" : "var(--border-strong)"}`,
+      borderRadius: 6,
+      boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+      zIndex: 1000,
+      pointerEvents: "none",
+      overflow: "hidden",
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: "10px 12px",
+        borderBottom: "1px solid var(--border)",
+        background: atRisk ? "#fff5f5" : "var(--bg-card)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+          <span style={{
+            fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700,
+            color: "var(--accent)", letterSpacing: "0.06em",
+          }}>{feature.issue_key}</span>
+          <span style={{
+            fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700,
+            padding: "1px 5px", borderRadius: 2,
+            background: atRisk ? "#fee2e2" : cfg.bg,
+            color: atRisk ? "#b91c1c" : cfg.text,
+            border: `1px solid ${atRisk ? "#fca5a5" : cfg.border}`,
+          }}>{atRisk ? "AT RISK" : feature.status}</span>
+        </div>
+        <div style={{
+          fontSize: 11, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.4,
+        }}>
+          {shortSummary(feature.summary)}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: "10px 12px" }}>
+        {/* Progress bar */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text-muted)", letterSpacing: "0.06em" }}>PROGRESS</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: atRisk ? "#b91c1c" : cfg.bar }}>
+              {Math.round(feature.pct_complete)}%
+            </span>
+          </div>
+          <div style={{ height: 5, background: "var(--track-bg)", borderRadius: 3, overflow: "hidden" }}>
+            <div style={{
+              height: "100%", width: `${Math.min(100, feature.pct_complete)}%`,
+              background: atRisk ? "#ef4444" : cfg.bar, borderRadius: 3,
+            }} />
+          </div>
+        </div>
+
+        {/* Story breakdown */}
+        {feature.story_total > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
+            {[
+              { label: "Done",        value: feature.story_done,        color: "#059669" },
+              { label: "In Progress", value: feature.story_in_progress, color: "#0052cc" },
+              { label: "To Do",       value: feature.story_todo,        color: "var(--text-muted)" },
+            ].map(s => (
+              <div key={s.label} style={{
+                background: "var(--bg-card)", border: "1px solid var(--border)",
+                borderRadius: 3, padding: "5px 6px", textAlign: "center",
+              }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: s.color }}>{s.value}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--text-muted)", letterSpacing: "0.04em" }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Date / assignee rows */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          {[
+            { label: "Start",    value: fmtDate(feature.target_start_date) },
+            { label: "End",      value: fmtDate(feature.target_end_date) },
+            { label: "Due",      value: fmtDate(feature.due_date) },
+            { label: "Assignee", value: assigneeShort },
+          ].map(r => (
+            <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text-muted)", letterSpacing: "0.06em" }}>{r.label.toUpperCase()}</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-primary)", fontWeight: 600 }}>{r.value}</span>
+            </div>
+          ))}
+          {daysLeft !== null && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text-muted)", letterSpacing: "0.06em" }}>DAYS LEFT</span>
+              <span style={{
+                fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700,
+                color: daysLeft < 0 ? "#b91c1c" : daysLeft < 14 ? "#b45309" : "#059669",
+              }}>
+                {daysLeft < 0 ? `${Math.abs(daysLeft)} overdue` : `${daysLeft} days`}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function toPct(dateStr: string): string {
   const d = new Date(dateStr);
@@ -199,17 +335,28 @@ function FeatureBar({ feature }: { feature: RoadmapFeature }) {
 const LABEL_W = 300;
 const ROW_H   = 56;
 
-function FeatureRow({ feature, isLast }: { feature: RoadmapFeature; isLast: boolean }) {
+function FeatureRow({ feature, isLast, onHover, onLeave }: {
+  feature: RoadmapFeature;
+  isLast: boolean;
+  onHover: (f: RoadmapFeature, e: React.MouseEvent) => void;
+  onLeave: () => void;
+}) {
   const cfg    = STATUS_CFG[feature.status] ?? fallbackCfg;
   const atRisk = isAtRisk(feature);
 
   return (
-    <div style={{
-      display: "flex", height: ROW_H,
-      borderBottom: isLast ? "none" : "1px solid var(--border)",
-      background: atRisk ? "rgba(239,68,68,0.03)" : "transparent",
-      alignItems: "center",
-    }}>
+    <div
+      onMouseEnter={e => onHover(feature, e)}
+      onMouseMove={e => onHover(feature, e)}
+      onMouseLeave={onLeave}
+      style={{
+        display: "flex", height: ROW_H,
+        borderBottom: isLast ? "none" : "1px solid var(--border)",
+        background: atRisk ? "rgba(239,68,68,0.03)" : "transparent",
+        alignItems: "center",
+        cursor: "default",
+      }}
+    >
       <div style={{
         width: LABEL_W, flexShrink: 0, padding: "0 14px",
         borderRight: "1px solid var(--border)", height: "100%",
@@ -269,6 +416,12 @@ export default function RoadmapPage() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState("");
   const [filter, setFilter]     = useState("all");
+  const [tooltip, setTooltip]   = useState<TooltipState | null>(null);
+
+  const handleHover = useCallback((f: RoadmapFeature, e: React.MouseEvent) => {
+    setTooltip({ feature: f, x: e.clientX, y: e.clientY });
+  }, []);
+  const handleLeave = useCallback(() => setTooltip(null), []);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/roadmap`, { cache: "no-store" })
@@ -359,7 +512,7 @@ export default function RoadmapPage() {
           </div>
         </div>
         {visible.map((feature, i) => (
-          <FeatureRow key={feature.issue_key} feature={feature} isLast={i === visible.length - 1} />
+          <FeatureRow key={feature.issue_key} feature={feature} isLast={i === visible.length - 1} onHover={handleHover} onLeave={handleLeave} />
         ))}
         {visible.length === 0 && (
           <div style={{ padding: "32px 0", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-muted)" }}>
@@ -367,6 +520,7 @@ export default function RoadmapPage() {
           </div>
         )}
       </div>
+      {tooltip && <Tooltip tip={tooltip} />}
     </div>
   );
 }
