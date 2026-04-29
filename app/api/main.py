@@ -5,6 +5,7 @@ from app.api.routers.pis import router as pis_router
 from app.api.routers.features import router as features_router
 from app.api.routers.findings import router as findings_router
 from app.api.routers.upload import router as upload_router
+from app.api.routers.roadmap import router as roadmap_router
 
 app = FastAPI(title="Jira Delivery Health API", version="0.1.0")
 
@@ -19,6 +20,7 @@ app.include_router(pis_router)
 app.include_router(features_router)
 app.include_router(findings_router)
 app.include_router(upload_router)
+app.include_router(roadmap_router)
 
 @app.get("/health")
 def health():

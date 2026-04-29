@@ -28,6 +28,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+import os
 from app.models import (
     FeatureMembership,
     Issue,
@@ -42,6 +43,24 @@ from app.models import (
     get_session_maker,
 )
 from sqlalchemy import select
+
+
+def _write_roadmap_dates(issue_id: int, target_start: Optional[str], target_end: Optional[str]) -> Optional[str]:
+    """Write roadmap dates via the SQLAlchemy engine, committing in its own connection."""
+    if not target_start and not target_end:
+        return None
+    try:
+        from app.models import get_engine
+        from sqlalchemy import text as _text
+        engine = get_engine()
+        with engine.begin() as conn:
+            conn.execute(
+                _text("UPDATE issue SET target_start_date = :ts, target_end_date = :te WHERE id = :id"),
+                {"ts": target_start, "te": target_end, "id": issue_id}
+            )
+        return None
+    except Exception as e:
+        return str(e)
 
 router = APIRouter(prefix="/api/upload", tags=["upload"])
 
@@ -456,10 +475,13 @@ def ingest_features_xlsx(df: pd.DataFrame, session: Session) -> dict:
         ).first()
 
         if existing:
-            existing.summary = summary or existing.summary
-            existing.status = status or existing.status
-            existing.status_category = _status_to_category(status)
-            existing.assignee = assignee
+            if summary:
+                existing.summary = summary
+            if status:
+                existing.status = status
+                existing.status_category = _status_to_category(status)
+            if assignee:
+                existing.assignee = assignee
             session.flush()
             inserted["features_updated"] += 1
         else:
@@ -481,19 +503,160 @@ def ingest_features_xlsx(df: pd.DataFrame, session: Session) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Roadmap XLSX ingestion  (Jira Advanced Roadmaps export)
+# ---------------------------------------------------------------------------
+
+RM_COL_KEY = "Issue key"
+RM_COL_TITLE = "Title"
+RM_COL_STATUS = "Issue status"
+RM_COL_START = "Target start date"
+RM_COL_END = "Target end date"
+RM_COL_DUE = "Due date"
+RM_COL_PROGRESS = "Progress (%)"
+RM_COL_TEAM = "Team"
+RM_COL_ASSIGNEE = "Assignee"
+RM_COL_PROJECT = "Project"
+RM_COL_PRIORITY = "Priority"
+RM_COL_TODO = "To do IC"
+RM_COL_INPROG = "In progress IC"
+RM_COL_DONE = "Done IC"
+RM_COL_TOTAL = "Total IC"
+
+
+def _parse_date(val) -> Optional[str]:
+    """Return ISO date string YYYY-MM-DD, or None. Returns str for SQLite compatibility."""
+    if val is None:
+        return None
+    try:
+        import pandas as pd
+        if pd.isna(val):
+            return None
+    except Exception:
+        pass
+    try:
+        return val.date().isoformat()
+    except AttributeError:
+        pass
+    try:
+        return str(val)[:10]
+    except Exception:
+        return None
+
+
+def ingest_roadmap_xlsx(df: pd.DataFrame, session: Session) -> dict:
+    org = _get_or_create_org(session)
+    site = _get_or_create_site(session)
+
+    inserted = {"features_updated": 0, "features_created": 0, "pis": 0}
+    warnings: list[str] = []
+    project_cache: dict[str, Project] = {}
+    pi_cache: dict[str, ProgramIncrement] = {}
+
+    for _, row in df.iterrows():
+        jira_key = str(row.get(RM_COL_KEY, "")).strip()
+        if not jira_key or jira_key == "nan":
+            continue
+
+        title = str(row.get(RM_COL_TITLE, "")).strip()
+        status = str(row.get(RM_COL_STATUS, "")).strip()
+        target_start = _parse_date(row.get(RM_COL_START))
+        target_end = _parse_date(row.get(RM_COL_END))
+        due_date = _parse_date(row.get(RM_COL_DUE))
+        assignee = str(row.get(RM_COL_ASSIGNEE, "")).strip() or None
+        priority = str(row.get(RM_COL_PRIORITY, "")).strip() or None
+        project_name = str(row.get(RM_COL_PROJECT, "")).strip()
+
+        # Derive project key from issue key prefix
+        project_key = jira_key.rsplit("-", 1)[0] if "-" in jira_key else jira_key
+        if project_key not in project_cache:
+            project_cache[project_key] = _get_or_create_project(
+                session, site, project_key, project_name or project_key
+            )
+        project = project_cache[project_key]
+
+        # Infer PI from target_end date — match against existing PIs
+        pi: Optional[ProgramIncrement] = None
+        if target_end:
+            from sqlalchemy import select as sa_select
+            from datetime import datetime as _dt
+            try:
+                target_end_dt = _dt.fromisoformat(target_end)
+                pis = session.scalars(sa_select(ProgramIncrement)).all()
+                for candidate in pis:
+                    if candidate.start_date <= target_end_dt <= candidate.end_date:
+                        pi = candidate
+                        break
+            except (ValueError, TypeError):
+                pass
+
+        # Upsert the feature issue with roadmap dates
+        existing = session.scalars(
+            select(Issue).where(Issue.site_id == site.id, Issue.jira_key == jira_key)
+        ).first()
+
+        if existing:
+            if title:
+                existing.summary = title
+            if status:
+                existing.status = status
+                existing.status_category = _status_to_category(status)
+            if assignee:
+                existing.assignee = assignee
+            if priority:
+                existing.priority = priority
+            if due_date:
+                from datetime import datetime as _dt
+                existing.due_date = _dt.fromisoformat(due_date)
+            session.flush()
+            # Write roadmap dates via direct sqlite3 (bypasses SQLAlchemy cache)
+            err = _write_roadmap_dates(existing.id, target_start, target_end)
+            if err:
+                warnings.append(f"{jira_key}: could not set roadmap dates — {err}")
+            inserted["features_updated"] += 1
+        else:
+            new_issue = _upsert_issue(
+                session, site, project, sprint=None,
+                jira_key=jira_key,
+                jira_id=abs(hash(jira_key)) % (10**8),
+                issue_type=IssueType.EPIC.value,
+                summary=title,
+                status=status,
+                story_points=None,
+                assignee=assignee,
+                priority=priority,
+            )
+            if due_date:
+                from datetime import datetime as _dt
+                new_issue.due_date = _dt.fromisoformat(due_date)
+            session.flush()
+            # Write roadmap dates via direct sqlite3 (bypasses SQLAlchemy cache)
+            err = _write_roadmap_dates(new_issue.id, target_start, target_end)
+            if err:
+                warnings.append(f"{jira_key}: could not set roadmap dates — {err}")
+            inserted["features_created"] += 1
+
+    session.commit()
+    return {"inserted": inserted, "warnings": warnings}
+
+
+# ---------------------------------------------------------------------------
 # File type detection
 # ---------------------------------------------------------------------------
 
 def _detect_file_type(filename: str, df: pd.DataFrame) -> str:
-    """Return 'stories_csv' or 'features_xlsx' based on filename + columns."""
+    """Return 'stories_csv', 'features_xlsx', or 'roadmap_xlsx'."""
     name_lower = filename.lower()
     cols = set(df.columns.tolist())
 
+    # Roadmap: has Target start date and Progress (%) columns
+    if RM_COL_START in cols and RM_COL_PROGRESS in cols:
+        return "roadmap_xlsx"
+    if "roadmap" in name_lower:
+        return "roadmap_xlsx"
     if "stories" in name_lower or COL_STORY_POINTS in cols:
         return "stories_csv"
     if "features" in name_lower or "isaac" in name_lower:
         return "features_xlsx"
-    # Fallback: if it has Feature Link column → stories; otherwise features
     if COL_FEATURE_LINK in cols:
         return "stories_csv"
     return "features_xlsx"
@@ -513,7 +676,15 @@ async def upload_file(file: UploadFile = File(...)):
         if filename.lower().endswith(".csv"):
             df = pd.read_csv(io.BytesIO(content), low_memory=False)
         elif filename.lower().endswith((".xlsx", ".xls")):
-            df = pd.read_excel(io.BytesIO(content))
+            xl = pd.ExcelFile(io.BytesIO(content))
+            df = None
+            for sheet in xl.sheet_names:
+                candidate = xl.parse(sheet)
+                if "Issue key" in candidate.columns:
+                    df = candidate
+                    break
+            if df is None:
+                df = xl.parse(xl.sheet_names[0])
         else:
             raise HTTPException(status_code=400, detail="Unsupported file type. Upload CSV or XLSX.")
     except Exception as e:
@@ -526,6 +697,8 @@ async def upload_file(file: UploadFile = File(...)):
         with SessionLocal() as session:
             if file_type == "stories_csv":
                 result = ingest_stories_csv(df, session)
+            elif file_type == "roadmap_xlsx":
+                result = ingest_roadmap_xlsx(df, session)
             else:
                 result = ingest_features_xlsx(df, session)
     except Exception as e:
