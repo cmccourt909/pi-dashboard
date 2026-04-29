@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "@/lib/api";
 
-// ── types ─────────────────────────────────────────────────────────────────────
-
 interface RoadmapFeature {
   issue_key: string;
   summary: string;
@@ -22,77 +20,87 @@ interface RoadmapFeature {
   pct_complete: number;
 }
 
-// ── constants ─────────────────────────────────────────────────────────────────
-
-// PI date boundaries for the timeline
 const PI_BANDS = [
-  { name: "PI 26.1", start: "2026-01-01", end: "2026-03-11", color: "#e8f0fb" },
-  { name: "PI 26.2", start: "2026-03-12", end: "2026-05-20", color: "#f0f7ff" },
-  { name: "PI 26.3", start: "2026-05-21", end: "2026-07-29", color: "#e8f0fb" },
-  { name: "PI 26.4", start: "2026-07-30", end: "2026-10-07", color: "#f0f7ff" },
-  { name: "PI 26.5", start: "2026-10-08", end: "2026-12-16", color: "#e8f0fb" },
+  { name: "PI 26.1", start: "2026-01-01", end: "2026-03-11" },
+  { name: "PI 26.2", start: "2026-03-12", end: "2026-05-20" },
+  { name: "PI 26.3", start: "2026-05-21", end: "2026-07-29" },
+  { name: "PI 26.4", start: "2026-07-30", end: "2026-10-07" },
+  { name: "PI 26.5", start: "2026-10-08", end: "2026-12-16" },
 ];
 
 const TIMELINE_START = new Date("2026-01-01");
-const TIMELINE_END = new Date("2026-12-31");
-const TIMELINE_DAYS = (TIMELINE_END.getTime() - TIMELINE_START.getTime()) / 86400000;
+const TIMELINE_END   = new Date("2026-12-31");
+const TIMELINE_DAYS  = (TIMELINE_END.getTime() - TIMELINE_START.getTime()) / 86400000;
+const TODAY          = new Date();
 
-const STATUS_COLORS: Record<string, { bar: string; text: string; bg: string; border: string }> = {
-  Implementing: { bar: "#0052cc", text: "#003a8c", bg: "#e8f0fb", border: "#b3d1f7" },
-  Analyzing:    { bar: "#a05c00", text: "#7a4500", bg: "#fff3e0", border: "#ffd699" },
-  Funnel:       { bar: "#6b7280", text: "#4a5568", bg: "#f3f4f6", border: "#d1d5db" },
-  "Ready Backlog": { bar: "#1a7f4b", text: "#145c35", bg: "#e6f5ec", border: "#b3dfc3" },
-  Done:         { bar: "#1a7f4b", text: "#145c35", bg: "#e6f5ec", border: "#b3dfc3" },
+const STATUS_CFG: Record<string, { bar: string; bg: string; border: string; text: string }> = {
+  Implementing:    { bar: "#0052cc", bg: "#dbeafe", border: "#93c5fd", text: "#1e3a8a" },
+  Analyzing:       { bar: "#b45309", bg: "#fef3c7", border: "#fcd34d", text: "#78350f" },
+  Funnel:          { bar: "#6b7280", bg: "#f3f4f6", border: "#d1d5db", text: "#374151" },
+  "Ready Backlog": { bar: "#059669", bg: "#d1fae5", border: "#6ee7b7", text: "#064e3b" },
+  Done:            { bar: "#059669", bg: "#d1fae5", border: "#6ee7b7", text: "#064e3b" },
+  "To Do":         { bar: "#6b7280", bg: "#f3f4f6", border: "#d1d5db", text: "#374151" },
+  Unknown:         { bar: "#9ca3af", bg: "#f9fafb", border: "#e5e7eb", text: "#6b7280" },
 };
 
-const TODAY = new Date();
+const fallbackCfg = STATUS_CFG["Unknown"];
 
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-function dayOffset(dateStr: string): number {
+function toPct(dateStr: string): string {
   const d = new Date(dateStr);
-  return Math.max(0, (d.getTime() - TIMELINE_START.getTime()) / 86400000);
+  const days = Math.max(0, (d.getTime() - TIMELINE_START.getTime()) / 86400000);
+  return `${Math.min(100, (days / TIMELINE_DAYS) * 100).toFixed(4)}%`;
 }
 
-function pct(days: number): string {
-  return `${Math.min(100, (days / TIMELINE_DAYS) * 100).toFixed(3)}%`;
+function widthPct(start: string, end: string): string {
+  const s = new Date(start).getTime();
+  const e = new Date(end).getTime();
+  const days = Math.max(0, (e - s) / 86400000);
+  return `${Math.min(100, (days / TIMELINE_DAYS) * 100).toFixed(4)}%`;
 }
 
 function fmtDate(d: string | null): string {
   if (!d) return "—";
-  const dt = new Date(d);
-  return dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function shortKey(key: string): string {
-  return key;
+function isAtRisk(f: RoadmapFeature): boolean {
+  if (!f.target_end_date) return false;
+  const end = new Date(f.target_end_date);
+  if (end < TODAY && f.pct_complete < 100) return true;
+  const daysLeft = (end.getTime() - TODAY.getTime()) / 86400000;
+  if (daysLeft < 14 && f.pct_complete < 80) return true;
+  return false;
 }
 
-// ── sub-components ────────────────────────────────────────────────────────────
+function shortSummary(summary: string): string {
+  return summary.replace(/^P-\d+: Cigna Commercial Migration \(ISAAC to IO\) - /, "");
+}
 
-function TodayLine() {
-  const offset = pct(dayOffset(TODAY.toISOString().slice(0, 10)));
+function PIHeaderRow() {
   return (
-    <div style={{
-      position: "absolute",
-      left: offset,
-      top: 0,
-      bottom: 0,
-      width: 1,
-      background: "#c0392b",
-      zIndex: 10,
-      pointerEvents: "none",
-    }}>
+    <div style={{ position: "relative", height: 36, borderBottom: "2px solid #b0bfcc" }}>
+      {PI_BANDS.map((pi, i) => {
+        const left = toPct(pi.start);
+        const width = widthPct(pi.start, pi.end);
+        const isEven = i % 2 === 0;
+        return (
+          <div key={pi.name} style={{
+            position: "absolute", left, width, top: 0, bottom: 0,
+            background: isEven ? "#dbeafe" : "#eff6ff",
+            borderRight: "1px solid #93c5fd",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <span style={{
+              fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700,
+              letterSpacing: "0.08em", color: "#1e40af", textTransform: "uppercase",
+            }}>{pi.name}</span>
+          </div>
+        );
+      })}
       <div style={{
-        position: "absolute",
-        top: -18,
-        left: -16,
-        fontFamily: "var(--font-mono)",
-        fontSize: 9,
-        color: "#c0392b",
-        fontWeight: 700,
-        whiteSpace: "nowrap",
-      }}>TODAY</div>
+        position: "absolute", left: toPct(TODAY.toISOString().slice(0, 10)),
+        top: 0, bottom: 0, width: 2, background: "#dc2626", zIndex: 10,
+      }} />
     </div>
   );
 }
@@ -100,336 +108,264 @@ function TodayLine() {
 function PIBands() {
   return (
     <>
-      {PI_BANDS.map((pi) => {
-        const left = pct(dayOffset(pi.start));
-        const width = pct(dayOffset(pi.end) - dayOffset(pi.start));
-        return (
-          <div key={pi.name} style={{
-            position: "absolute",
-            left,
-            width,
-            top: 0,
-            bottom: 0,
-            background: pi.color,
-            borderRight: "1px solid #d0dae6",
-          }}>
-            <div style={{
-              position: "absolute",
-              top: 4,
-              left: 6,
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              fontWeight: 700,
-              color: "#8fa4b8",
-              letterSpacing: "0.06em",
-            }}>{pi.name}</div>
-          </div>
-        );
-      })}
+      {PI_BANDS.map((pi, i) => (
+        <div key={pi.name} style={{
+          position: "absolute", left: toPct(pi.start), width: widthPct(pi.start, pi.end),
+          top: 0, bottom: 0,
+          background: i % 2 === 0 ? "rgba(219,234,254,0.25)" : "rgba(239,246,255,0.15)",
+          borderRight: "1px solid #dbeafe", pointerEvents: "none",
+        }} />
+      ))}
     </>
   );
 }
 
-function FeatureBar({ feature }: { feature: RoadmapFeature }) {
-  const cfg = STATUS_COLORS[feature.status] ?? STATUS_COLORS["Funnel"];
-  const hasBar = feature.target_start_date && feature.target_end_date;
-
-  if (!hasBar) {
-    return (
+function TodayLine() {
+  return (
+    <div style={{
+      position: "absolute", left: toPct(TODAY.toISOString().slice(0, 10)),
+      top: 0, bottom: 0, width: 2, background: "#dc2626", zIndex: 10, pointerEvents: "none",
+    }}>
       <div style={{
-        height: 20,
-        display: "flex",
-        alignItems: "center",
-        paddingLeft: 8,
-      }}>
-        <span style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 9,
-          color: "var(--text-muted)",
-          fontStyle: "italic",
-        }}>no dates planned</span>
+        position: "absolute", top: 4, left: 4,
+        fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700,
+        color: "#dc2626", whiteSpace: "nowrap", letterSpacing: "0.08em",
+      }}>TODAY</div>
+    </div>
+  );
+}
+
+function FeatureBar({ feature }: { feature: RoadmapFeature }) {
+  const cfg = STATUS_CFG[feature.status] ?? fallbackCfg;
+  const atRisk = isAtRisk(feature);
+
+  if (!feature.target_start_date || !feature.target_end_date) {
+    return (
+      <div style={{ height: 28, display: "flex", alignItems: "center" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text-muted)", fontStyle: "italic", paddingLeft: 8 }}>
+          no dates planned
+        </span>
       </div>
     );
   }
 
-  const startPct = pct(dayOffset(feature.target_start_date!));
-  const widthPct = pct(dayOffset(feature.target_end_date!) - dayOffset(feature.target_start_date!));
-  const progressWidth = `${feature.pct_complete}%`;
-  const hasDue = !!feature.due_date;
-  const duePct = hasDue ? pct(dayOffset(feature.due_date!)) : null;
+  const left = toPct(feature.target_start_date);
+  const width = widthPct(feature.target_start_date, feature.target_end_date);
+  const progressW = `${Math.min(100, feature.pct_complete).toFixed(1)}%`;
+  const showLabel = feature.pct_complete >= 15;
 
   return (
-    <div style={{ position: "relative", height: 24 }}>
-      {/* Planned bar */}
+    <div style={{ position: "relative", height: 28, display: "flex", alignItems: "center" }}>
       <div style={{
-        position: "absolute",
-        left: startPct,
-        width: widthPct,
-        top: 4,
-        height: 16,
-        background: cfg.bg,
-        border: `1px solid ${cfg.border}`,
-        borderRadius: 3,
-        overflow: "hidden",
+        position: "absolute", left, width, height: 22,
+        background: atRisk ? "#fee2e2" : cfg.bg,
+        border: `1px solid ${atRisk ? "#fca5a5" : cfg.border}`,
+        borderRadius: 3, overflow: "hidden",
       }}>
-        {/* Actual progress fill */}
         <div style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: progressWidth,
-          background: cfg.bar,
-          opacity: 0.85,
+          position: "absolute", left: 0, top: 0, bottom: 0, width: progressW,
+          background: atRisk ? "#ef4444" : cfg.bar,
+          borderRadius: "3px 0 0 3px", transition: "width 0.4s ease",
         }} />
-        {/* Label */}
-        {feature.pct_complete > 0 && (
+        {showLabel && (
           <div style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            paddingLeft: 5,
-            fontFamily: "var(--font-mono)",
-            fontSize: 8,
-            fontWeight: 700,
-            color: feature.pct_complete > 40 ? "#fff" : cfg.text,
-            zIndex: 1,
+            position: "absolute", inset: 0, display: "flex", alignItems: "center", paddingLeft: 6,
+            fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700,
+            color: feature.pct_complete > 45 ? "#fff" : (atRisk ? "#b91c1c" : cfg.text),
+            zIndex: 1, letterSpacing: "0.04em",
           }}>
             {Math.round(feature.pct_complete)}%
           </div>
         )}
       </div>
-      {/* Due date marker */}
-      {duePct && (
+      {feature.due_date && (
         <div style={{
-          position: "absolute",
-          left: duePct,
-          top: 2,
-          width: 2,
-          height: 20,
-          background: "#c0392b",
-          borderRadius: 1,
+          position: "absolute", left: toPct(feature.due_date),
+          top: 2, width: 3, height: 24, background: "#dc2626", borderRadius: 1, zIndex: 5,
         }} />
+      )}
+      {atRisk && (
+        <div style={{
+          position: "absolute", left: `calc(${left} - 14px)`,
+          top: "50%", transform: "translateY(-50%)",
+          fontFamily: "var(--font-mono)", fontWeight: 900, fontSize: 13,
+          color: "#ef4444", zIndex: 6,
+        }}>!</div>
       )}
     </div>
   );
 }
 
-// ── main page ─────────────────────────────────────────────────────────────────
+const LABEL_W = 300;
+const ROW_H   = 56;
+
+function FeatureRow({ feature, isLast }: { feature: RoadmapFeature; isLast: boolean }) {
+  const cfg    = STATUS_CFG[feature.status] ?? fallbackCfg;
+  const atRisk = isAtRisk(feature);
+
+  return (
+    <div style={{
+      display: "flex", height: ROW_H,
+      borderBottom: isLast ? "none" : "1px solid var(--border)",
+      background: atRisk ? "rgba(239,68,68,0.03)" : "transparent",
+      alignItems: "center",
+    }}>
+      <div style={{
+        width: LABEL_W, flexShrink: 0, padding: "0 14px",
+        borderRight: "1px solid var(--border)", height: "100%",
+        display: "flex", flexDirection: "column", justifyContent: "center", gap: 3,
+        borderLeft: atRisk ? "3px solid #ef4444" : "3px solid transparent",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{
+            fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700,
+            color: "var(--accent)", flexShrink: 0, letterSpacing: "0.05em",
+          }}>{feature.issue_key}</span>
+          <span style={{
+            fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700,
+            padding: "1px 5px", borderRadius: 2,
+            background: atRisk ? "#fee2e2" : cfg.bg,
+            color: atRisk ? "#b91c1c" : cfg.text,
+            border: `1px solid ${atRisk ? "#fca5a5" : cfg.border}`,
+            flexShrink: 0, letterSpacing: "0.04em",
+          }}>{atRisk ? "AT RISK" : feature.status.toUpperCase()}</span>
+        </div>
+        <div style={{
+          fontSize: 11, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3,
+          overflow: "hidden", display: "-webkit-box",
+          WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+        }} title={feature.summary}>
+          {shortSummary(feature.summary)}
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {feature.story_total > 0 && (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text-muted)" }}>
+              {feature.story_done}/{feature.story_total} stories
+            </span>
+          )}
+          {feature.target_end_date && (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text-muted)" }}>
+              ends {fmtDate(feature.target_end_date)}
+            </span>
+          )}
+        </div>
+      </div>
+      <div style={{
+        flex: 1, position: "relative", height: "100%",
+        display: "flex", alignItems: "center", padding: "0 6px", overflow: "hidden",
+      }}>
+        <PIBands />
+        <TodayLine />
+        <div style={{ position: "relative", width: "100%", zIndex: 2 }}>
+          <FeatureBar feature={feature} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function RoadmapPage() {
   const [features, setFeatures] = useState<RoadmapFeature[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [filter, setFilter] = useState<string>("all");
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState("");
+  const [filter, setFilter]     = useState("all");
 
   useEffect(() => {
     fetch(`${API_BASE}/api/roadmap`, { cache: "no-store" })
-      .then((r) => r.json())
-      .then((data) => { setFeatures(data); setLoading(false); })
+      .then(r => r.json())
+      .then(data => { setFeatures(data); setLoading(false); })
       .catch(() => { setError("Could not load roadmap — make sure the backend is running."); setLoading(false); });
   }, []);
 
-  const statuses = ["all", ...Array.from(new Set(features.map((f) => f.status))).sort()];
-  const visible = filter === "all" ? features : features.filter((f) => f.status === filter);
-  const withDates = visible.filter((f) => f.target_start_date && f.target_end_date);
-  const withoutDates = visible.filter((f) => !f.target_start_date || !f.target_end_date);
+  const statuses    = ["all", ...Array.from(new Set(features.map(f => f.status))).sort()];
+  const atRiskCount = features.filter(isAtRisk).length;
+  const withDates   = features.filter(f => f.target_start_date && f.target_end_date);
 
-  if (loading) return (
-    <div style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: 12, padding: 32 }}>
-      Loading roadmap…
-    </div>
-  );
-  if (error) return (
-    <div style={{ color: "var(--status-critical)", fontFamily: "var(--font-mono)", fontSize: 12, padding: 32 }}>
-      {error}
-    </div>
-  );
+  const visible = filter === "at-risk"
+    ? features.filter(isAtRisk)
+    : filter === "all"
+    ? features
+    : features.filter(f => f.status === filter);
 
-  const ROW_HEIGHT = 44;
-  const LABEL_WIDTH = 280;
+  if (loading) return <div style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: 12, padding: 32 }}>Loading roadmap…</div>;
+  if (error)   return <div style={{ color: "var(--status-critical)", fontFamily: "var(--font-mono)", fontSize: 12, padding: 32 }}>{error}</div>;
 
   return (
     <div>
-      {/* Page header */}
       <div style={{ marginBottom: 24 }}>
         <div className="label" style={{ marginBottom: 4 }}>Planning</div>
-        <h1 style={{
-          fontFamily: "var(--font-display)",
-          fontWeight: 700,
-          fontSize: 26,
-          letterSpacing: "0.04em",
-          color: "var(--text-primary)",
-          marginBottom: 8,
-        }}>ROADMAP</h1>
+        <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 26, letterSpacing: "0.04em", color: "var(--text-primary)", marginBottom: 6 }}>ROADMAP</h1>
         <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>
           Planned delivery windows from Jira Advanced Roadmaps, overlaid with actual story progress.
-          <span style={{ marginLeft: 12, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-muted)" }}>
-            {features.length} features · {withDates.length} with planned dates
-          </span>
         </p>
       </div>
 
-      {/* Legend + filter */}
-      <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 20, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 20 }}>
+        {[
+          { label: "Total Features",  value: features.length,  color: undefined },
+          { label: "With Dates",      value: withDates.length, color: undefined },
+          { label: "At Risk",         value: atRiskCount,      color: atRiskCount > 0 ? "var(--status-critical)" : undefined },
+          { label: "Implementing",    value: features.filter(f => f.status === "Implementing").length, color: "var(--accent)" },
+        ].map(s => (
+          <div key={s.label} className="panel" style={{ padding: "12px 16px" }}>
+            <div className="label" style={{ marginBottom: 4 }}>{s.label}</div>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700, color: s.color ?? "var(--text-primary)" }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, gap: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <button onClick={() => setFilter(filter === "at-risk" ? "all" : "at-risk")} style={{
+            fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 3,
+            border: `1px solid ${filter === "at-risk" ? "#ef4444" : "var(--border)"}`,
+            background: filter === "at-risk" ? "#fee2e2" : "var(--bg-panel)",
+            color: filter === "at-risk" ? "#b91c1c" : "var(--text-secondary)", cursor: "pointer", letterSpacing: "0.06em",
+          }}>! AT RISK ({atRiskCount})</button>
+          {statuses.map(s => (
+            <button key={s} onClick={() => setFilter(s)} style={{
+              fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 3,
+              border: `1px solid ${filter === s ? "var(--accent)" : "var(--border)"}`,
+              background: filter === s ? "var(--accent-light)" : "var(--bg-panel)",
+              color: filter === s ? "var(--accent)" : "var(--text-secondary)", cursor: "pointer",
+              textTransform: "capitalize", letterSpacing: "0.04em",
+            }}>{s}</button>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
           {[
-            { color: "#0052cc", label: "Actual progress" },
-            { color: "#c0392b", label: "Due date" },
-            { color: "#c0392b", label: "Today", dashed: true },
-          ].map((l) => (
+            { color: "#0052cc", label: "Progress" },
+            { color: "#ef4444", label: "At risk" },
+          ].map(l => (
             <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <div style={{
-                width: l.dashed ? 1 : 12,
-                height: l.dashed ? 14 : 10,
-                background: l.color,
-                borderRadius: l.dashed ? 0 : 2,
-                borderLeft: l.dashed ? `1px dashed ${l.color}` : undefined,
-              }} />
+              <div style={{ width: 12, height: 10, background: l.color, borderRadius: 2 }} />
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-secondary)" }}>{l.label}</span>
             </div>
           ))}
-        </div>
-
-        <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-          {statuses.map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilter(s)}
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: "0.06em",
-                padding: "4px 10px",
-                borderRadius: 3,
-                border: `1px solid ${filter === s ? "var(--accent)" : "var(--border)"}`,
-                background: filter === s ? "var(--accent-light)" : "var(--bg-panel)",
-                color: filter === s ? "var(--accent)" : "var(--text-secondary)",
-                cursor: "pointer",
-                textTransform: "capitalize",
-              }}
-            >
-              {s}
-            </button>
-          ))}
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div style={{ width: 2, height: 14, background: "#dc2626" }} />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#dc2626", fontWeight: 700 }}>Due / Today</span>
+          </div>
         </div>
       </div>
 
-      {/* Timeline */}
       <div className="panel" style={{ overflow: "hidden" }}>
-        {/* Header row */}
         <div style={{ display: "flex", borderBottom: "1px solid var(--border)", background: "var(--bg-card)" }}>
-          <div style={{ width: LABEL_WIDTH, flexShrink: 0, padding: "8px 12px", borderRight: "1px solid var(--border)" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: "var(--text-muted)", textTransform: "uppercase" }}>
-              Feature
-            </span>
+          <div style={{ width: LABEL_W, flexShrink: 0, padding: "8px 14px", borderRight: "1px solid var(--border)" }}>
+            <span className="label">Feature</span>
           </div>
-          <div style={{ flex: 1, position: "relative", height: 28, overflow: "hidden" }}>
-            <PIBands />
+          <div style={{ flex: 1, position: "relative" }}>
+            <PIHeaderRow />
           </div>
         </div>
-
-        {/* Feature rows */}
-        {[...withDates, ...withoutDates].map((feature, i) => {
-          const cfg = STATUS_COLORS[feature.status] ?? STATUS_COLORS["Funnel"];
-          const isLast = i === visible.length - 1;
-          return (
-            <div
-              key={feature.issue_key}
-              style={{
-                display: "flex",
-                borderBottom: isLast ? "none" : "1px solid var(--border)",
-                height: ROW_HEIGHT,
-                alignItems: "center",
-              }}
-            >
-              {/* Label column */}
-              <div style={{
-                width: LABEL_WIDTH,
-                flexShrink: 0,
-                padding: "0 12px",
-                borderRight: "1px solid var(--border)",
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                gap: 2,
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 9,
-                    fontWeight: 700,
-                    color: "var(--accent)",
-                    flexShrink: 0,
-                  }}>{shortKey(feature.issue_key)}</span>
-                  <span style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: "var(--text-primary)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    flex: 1,
-                  }} title={feature.summary}>
-                    {feature.summary.replace(/^P-031440: Cigna Commercial Migration \(ISAAC to IO\) - /, "")}
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 8,
-                    fontWeight: 700,
-                    padding: "1px 5px",
-                    borderRadius: 2,
-                    background: cfg.bg,
-                    color: cfg.text,
-                    border: `1px solid ${cfg.border}`,
-                    flexShrink: 0,
-                  }}>{feature.status}</span>
-                  {feature.story_total > 0 && (
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text-muted)" }}>
-                      {feature.story_done}/{feature.story_total} stories
-                    </span>
-                  )}
-                  {feature.due_date && (
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text-muted)", marginLeft: "auto" }}>
-                      due {fmtDate(feature.due_date)}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Timeline column */}
-              <div style={{ flex: 1, position: "relative", height: "100%", display: "flex", alignItems: "center", padding: "0 4px" }}>
-                <PIBands />
-                <TodayLine />
-                <div style={{ position: "relative", width: "100%", zIndex: 2 }}>
-                  <FeatureBar feature={feature} />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Summary stats */}
-      <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
-        {[
-          { label: "Total Features", value: features.length },
-          { label: "Implementing", value: features.filter(f => f.status === "Implementing").length },
-          { label: "Analyzing", value: features.filter(f => f.status === "Analyzing").length },
-          { label: "Funnel / Backlog", value: features.filter(f => ["Funnel","Ready Backlog"].includes(f.status)).length },
-        ].map((s) => (
-          <div key={s.label} className="panel" style={{ padding: "12px 14px" }}>
-            <div className="label" style={{ marginBottom: 4 }}>{s.label}</div>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 700, color: "var(--text-primary)" }}>
-              {s.value}
-            </div>
-          </div>
+        {visible.map((feature, i) => (
+          <FeatureRow key={feature.issue_key} feature={feature} isLast={i === visible.length - 1} />
         ))}
+        {visible.length === 0 && (
+          <div style={{ padding: "32px 0", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-muted)" }}>
+            No features match this filter.
+          </div>
+        )}
       </div>
     </div>
   );
