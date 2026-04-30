@@ -133,11 +133,12 @@ function mockData(): RoadmapData {
 
 // ─── Gantt Bar (pixel-based) ──────────────────────────────────────────────────
 
-function GanttBar({ feature, origin, granularity, sprints }: {
+function GanttBar({ feature, origin, granularity, sprints, canvasWidth }: {
   feature: Feature;
   origin: Date;
   granularity: GranularityMode;
   sprints: RoadmapData["sprints"];
+  canvasWidth: number;
 }) {
   const [tooltip, setTooltip] = useState(false);
   const start = parseDate(feature.planned_start);
@@ -160,7 +161,7 @@ function GanttBar({ feature, origin, granularity, sprints }: {
 
   return (
     <div className="gantt-bar-row" onMouseEnter={() => setTooltip(true)} onMouseLeave={() => setTooltip(false)}>
-      <div className="gantt-bar-track">
+      <div className="gantt-bar-track" style={{ width: `${canvasWidth}px` }}>
         <div
           className={`gantt-bar ${isOverdue(feature) ? "overdue" : isAtRisk(feature) ? "at-risk" : ""}`}
           style={{ left: `${left}px`, width: `${width}px`, borderColor: color }}
@@ -215,7 +216,7 @@ export default function RoadmapPage() {
   const [sort, setSort] = useState<SortKey>("default");
   const [view, setView] = useState<ViewMode>("feature");
   const [granularity, setGranularity] = useState<GranularityMode>("pi");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("planned");
   const [exporting, setExporting] = useState(false);
   const ganttRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -230,8 +231,8 @@ export default function RoadmapPage() {
           summary: f.summary,
           status: f.status ?? "Unknown",
           progress: f.pct_complete ?? f.progress ?? 0,
-          planned_start: f.target_start_date ?? f.planned_start,
-          planned_end: f.target_end_date ?? f.planned_end,
+          planned_start: f.target_start_date || f.planned_start || undefined,
+          planned_end: f.target_end_date || f.planned_end || undefined,
           assignee: f.assignee ?? undefined,
           sprints: f.sprints ?? [],
           stories: f.stories ?? [
@@ -270,9 +271,11 @@ export default function RoadmapPage() {
 
   // ── Feature list with sort + filter ──────────────────────────────────────
   // Exclude features with no planned dates — they add no value to a timeline view
-  const datedFeatures = data.features.filter(f => f.planned_start && f.planned_end);
+  const datedFeatures = data.features.filter(f => !!parseDate(f.planned_start) && !!parseDate(f.planned_end));
+  const undatedFeatures = data.features.filter(f => !parseDate(f.planned_start) || !parseDate(f.planned_end));
+  const sourceFeatures = statusFilter === "no_dates" ? undatedFeatures : datedFeatures;
 
-  let features = sortFeatures(datedFeatures, sort);
+  let features = sortFeatures(sourceFeatures, sort);
   if (statusFilter === "at_risk") features = features.filter(f => isAtRisk(f) || isOverdue(f));
   else if (statusFilter === "in progress") features = features.filter(f => f.status.toLowerCase().includes("implement") || f.status.toLowerCase().includes("progress"));
   else if (statusFilter === "blocked") features = features.filter(f => f.status.toLowerCase() === "blocked");
@@ -328,17 +331,19 @@ export default function RoadmapPage() {
           {f.assignee && <span className="feature-assignee">👤 {f.assignee}</span>}
         </div>
         <div className="gantt-track">
-          <GanttBar feature={f} origin={origin} granularity={granularity} sprints={data.sprints} />
+          <GanttBar feature={f} origin={origin} granularity={granularity} sprints={data.sprints} canvasWidth={totalPx} />
         </div>
       </div>
     );
   }
 
   const statusCounts = {
+    planned: datedFeatures.length,
     all: datedFeatures.length,
     at_risk: datedFeatures.filter(f => isAtRisk(f) || isOverdue(f)).length,
     "in progress": datedFeatures.filter(f => f.status.toLowerCase().includes("implement") || f.status.toLowerCase().includes("progress")).length,
     blocked: datedFeatures.filter(f => f.status.toLowerCase() === "blocked").length,
+    no_dates: undatedFeatures.length,
   };
 
   return (
@@ -524,10 +529,17 @@ export default function RoadmapPage() {
 
         {/* Pills */}
         <div className="filter-pills">
-          {(["all", "at_risk", "in progress", "blocked"] as const).map(s => (
-            <button key={s} className={`pill ${statusFilter === s ? "active" : ""}`} onClick={() => setStatusFilter(s)}>
-              {s === "all" ? "All" : s === "at_risk" ? "⚠ At Risk" : s === "in progress" ? "In Progress" : "🚫 Blocked"}
-              <span className="pill-count">{statusCounts[s]}</span>
+          {([
+            { key: "planned", label: "Planned" },
+            { key: "at_risk", label: "⚠ At Risk" },
+            { key: "in progress", label: "In Progress" },
+            { key: "blocked", label: "🚫 Blocked" },
+            { key: "all", label: "All" },
+            { key: "no_dates", label: "📅 No Dates" },
+          ] as const).map(({ key, label }) => (
+            <button key={key} className={`pill ${statusFilter === key ? "active" : ""}`} onClick={() => setStatusFilter(key)}>
+              {label}
+              <span className="pill-count">{statusCounts[key as keyof typeof statusCounts]}</span>
             </button>
           ))}
         </div>
@@ -607,7 +619,7 @@ export default function RoadmapPage() {
                   <div key={f.key} className={`gantt-row ${isOverdue(f) ? "row-overdue" : isAtRisk(f) ? "row-risk" : ""}`}>
                     <div className="gantt-track" style={{ width: `${totalPx}px` }}>
                       <div className="today-line" style={{ left: `${todayPx}px` }} />
-                      <GanttBar feature={f} origin={origin} granularity={granularity} sprints={data.sprints} />
+                      <GanttBar feature={f} origin={origin} granularity={granularity} sprints={data.sprints} canvasWidth={totalPx} />
                     </div>
                   </div>
                 ))}
@@ -622,7 +634,7 @@ export default function RoadmapPage() {
                       <div key={f.key} className={`gantt-row ${isOverdue(f) ? "row-overdue" : isAtRisk(f) ? "row-risk" : ""}`}>
                         <div className="gantt-track" style={{ width: `${totalPx}px` }}>
                           <div className="today-line" style={{ left: `${todayPx}px` }} />
-                          <GanttBar feature={f} origin={origin} granularity={granularity} sprints={data.sprints} />
+                          <GanttBar feature={f} origin={origin} granularity={granularity} sprints={data.sprints} canvasWidth={totalPx} />
                         </div>
                       </div>
                     ))}
@@ -639,7 +651,7 @@ export default function RoadmapPage() {
                       <div key={f.key} className={`gantt-row ${isOverdue(f) ? "row-overdue" : isAtRisk(f) ? "row-risk" : ""}`}>
                         <div className="gantt-track" style={{ width: `${totalPx}px` }}>
                           <div className="today-line" style={{ left: `${todayPx}px` }} />
-                          <GanttBar feature={f} origin={origin} granularity={granularity} sprints={data.sprints} />
+                          <GanttBar feature={f} origin={origin} granularity={granularity} sprints={data.sprints} canvasWidth={totalPx} />
                         </div>
                       </div>
                     ))}
