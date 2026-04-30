@@ -14,6 +14,9 @@ from app.api.schemas import (
 BLOCKED_STATUSES = {"blocked", "impediment"}
 BLOCKED_LINK_TYPES = {"blocks"}
 
+# Features excluded from all UI views and health score calculations
+EXCLUDED_FEATURE_KEYS = {"PGM-1"}
+
 
 def _is_blocked(issue: Issue, links: list[IssueLink], issue_by_id: dict) -> bool:
     for link in links:
@@ -57,13 +60,26 @@ def get_pi_summaries(session: Session, findings: list) -> list[PISummary]:
     all_issues = session.scalars(select(Issue)).all()
     issue_by_id = {i.id: i for i in all_issues}
 
+    # Build set of story IDs belonging to excluded features
+    all_memberships = session.scalars(select(FeatureMembership)).all()
+    excluded_feature_ids = {
+        i.id for i in all_issues if i.jira_key in EXCLUDED_FEATURE_KEYS
+    }
+    excluded_story_ids = {
+        m.issue_id for m in all_memberships
+        if m.feature_issue_id in excluded_feature_ids
+    }
+
     results = []
     for pi in pis:
         sprint_summaries = []
         pi_total = pi_done = pi_blocked = 0
 
         for sprint in sorted(pi.sprints, key=lambda s: s.name):
-            issues = [i for i in all_issues if i.sprint_id == sprint.id]
+            issues = [
+                i for i in all_issues
+                if i.sprint_id == sprint.id and i.id not in excluded_story_ids
+            ]
             total = len(issues)
             done = sum(1 for i in issues if i.status_category == "done")
             blocked = sum(1 for i in issues if _is_blocked(i, all_links, issue_by_id))
@@ -128,6 +144,9 @@ def get_feature_summaries(session: Session, findings: list) -> list[FeatureSumma
     for fid in feature_ids:
         feature_issue = issue_by_id.get(fid)
         if not feature_issue:
+            continue
+        # Skip excluded features
+        if feature_issue.jira_key in EXCLUDED_FEATURE_KEYS:
             continue
 
         member_ids = {m.issue_id for m in memberships if m.feature_issue_id == fid}

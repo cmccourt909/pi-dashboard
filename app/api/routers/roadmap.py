@@ -61,7 +61,10 @@ def get_roadmap():
 
         # ── Features ──────────────────────────────────────────────────────────
         epics = session.scalars(
-            select(Issue).where(Issue.issue_type == IssueType.EPIC.value)
+            select(Issue).where(
+                Issue.issue_type == IssueType.EPIC.value,
+                Issue.jira_key.notin_(["PGM-1"]),
+            )
         ).all()
 
         memberships = session.scalars(select(FeatureMembership)).all()
