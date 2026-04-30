@@ -55,7 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <NavLinks />
           </div>
         </header>
-        <main style={{ maxWidth: 1280, margin: "0 auto", padding: "28px 32px 64px" }}>
+        <main style={{ maxWidth: "100%", margin: "0 auto", padding: "28px 32px 64px" }}>
           {children}
         </main>
       </body>
