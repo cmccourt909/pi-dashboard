@@ -260,16 +260,39 @@ export default function RoadmapPage() {
   if (!data) return <div className="loading">Loading roadmap…</div>;
 
   // ── Timeline origin = start of first PI ───────────────────────────────────
-  const bands = granularity === "sprint" ? data.sprints : data.pis;
+  // For sprint bands: only canonical "Sprint XX.X.X" entries, deduped by name, sorted by start
+  const canonicalSprints = Array.from(
+    data.sprints
+      .filter(s => /^Sprint \d+\.\d+\.\d+$/.test(s.name) && parseDate(s.start) && parseDate(s.end))
+      .reduce((map, s) => { if (!map.has(s.name)) map.set(s.name, s); return map; }, new Map<string, typeof data.sprints[0]>())
+      .values()
+  ).sort((a, b) => parseDate(a.start)!.getTime() - parseDate(b.start)!.getTime());
+  const bands = granularity === "sprint" ? canonicalSprints : data.pis;
   const allPIDates = data.pis.flatMap(p => [parseDate(p.start)!, parseDate(p.end)!]);
   const origin = new Date(Math.min(...allPIDates.map(d => d.getTime())));
   const timelineEnd = new Date(Math.max(...allPIDates.map(d => d.getTime())));
   const totalPx = dateToPx(timelineEnd, origin) + PX_PER_DAY * 14; // 14-day right padding
 
+  // ── Month ruler ───────────────────────────────────────────────────────────
+  // Build list of months spanning the full timeline
+  const monthBands: { label: string; left: number; width: number }[] = [];
+  const cursor = new Date(origin.getFullYear(), origin.getMonth(), 1, 12);
+  const timelineEndDate = new Date(timelineEnd.getTime() + PX_PER_DAY * 14 * 86400000);
+  while (cursor <= timelineEndDate) {
+    const monthStart = new Date(cursor);
+    const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1, 12);
+    const left = Math.max(0, dateToPx(monthStart, origin));
+    const right = dateToPx(monthEnd, origin);
+    monthBands.push({
+      label: cursor.toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+      left,
+      width: right - left,
+    });
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
   // Today line
   const todayPx = dateToPx(new Date(), origin);
-
-  // ── Feature list with sort + filter ──────────────────────────────────────
   // Exclude features with no planned dates — they add no value to a timeline view
   const datedFeatures = data.features.filter(f => !!parseDate(f.planned_start) && !!parseDate(f.planned_end));
   const undatedFeatures = data.features.filter(f => !parseDate(f.planned_start) || !parseDate(f.planned_end));
@@ -319,22 +342,6 @@ export default function RoadmapPage() {
     } finally {
       setExporting(false);
     }
-  }
-
-  // ── Render feature row ────────────────────────────────────────────────────
-  function renderFeatureRow(f: Feature) {
-    return (
-      <div key={f.key} className={`gantt-row ${isOverdue(f) ? "row-overdue" : isAtRisk(f) ? "row-risk" : ""}`}>
-        <div className="gantt-label">
-          <span className="feature-key">{f.key}</span>
-          <span className="feature-summary" title={f.summary}>{cleanSummary(f.summary)}</span>
-          {f.assignee && <span className="feature-assignee">👤 {f.assignee}</span>}
-        </div>
-        <div className="gantt-track">
-          <GanttBar feature={f} origin={origin} granularity={granularity} sprints={data.sprints} canvasWidth={totalPx} />
-        </div>
-      </div>
-    );
   }
 
   const statusCounts = {
@@ -394,7 +401,7 @@ export default function RoadmapPage() {
 
         /* Fixed label column */
         .gantt-labels-col { flex-shrink: 0; width: ${LABEL_WIDTH}px; border-right: 2px solid var(--border); z-index: 10; background: white; }
-        .gantt-label-header { height: 48px; padding: 0 14px; display: flex; align-items: center; font-size: 13px; font-weight: 600; color: var(--gray-600); border-bottom: 2px solid var(--border); }
+        .gantt-label-header { height: 80px; padding: 0 14px; display: flex; align-items: center; font-size: 13px; font-weight: 600; color: var(--gray-600); border-bottom: 2px solid var(--border); }
         .gantt-label { padding: 10px 14px; display: flex; flex-direction: column; justify-content: center; gap: 3px; overflow: hidden; border-bottom: 1px solid var(--gray-100); min-height: 56px; }
         .feature-key { font-size: 12px; font-weight: 600; color: var(--blue); font-family: monospace; }
         .feature-summary { font-size: 14px; color: var(--gray-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -409,10 +416,18 @@ export default function RoadmapPage() {
         /* The inner canvas — fixed pixel width */
         .gantt-canvas { position: relative; }
 
+        /* Month ruler */
+        .month-ruler { height: 28px; position: relative; border-bottom: 1px solid var(--border); background: #1e3a5f; }
+        .month-band { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #e2eaf4; border-right: 1px solid rgba(255,255,255,0.15); white-space: nowrap; overflow: hidden; letter-spacing: 0.04em; text-transform: uppercase; }
+
         /* Timeline band header */
-        .timeline-header-row { height: 48px; position: relative; border-bottom: 2px solid var(--border); display: flex; align-items: stretch; }
+        .timeline-header-row { height: 80px; position: relative; border-bottom: 2px solid var(--border); display: flex; align-items: stretch; overflow: hidden; background: linear-gradient(to right, #eff6ff 0%, #eff6ff 50%, #dbeafe 50%, #dbeafe 100%); background-size: 280px 100%; }
+        .timeline-header-row.sprint-mode { background: #f8fafc; overflow: visible; }
         .timeline-band { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--gray-800); border-right: 1px solid var(--border); overflow: hidden; padding: 0 4px; text-align: center; }
-        .timeline-band.sprint { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 10px; }
+        .timeline-band.sprint { overflow: visible; z-index: 2; background: transparent !important; padding: 0; }
+        .timeline-band.sprint span { position: absolute; bottom: 8px; left: 50%; display: inline-block; transform: rotate(-45deg); transform-origin: left bottom; font-size: 11px; font-weight: 600; color: var(--gray-800); white-space: nowrap; line-height: 1; }
+        .sprint-label-main { font-size: 11px; font-weight: 700; color: var(--gray-800); }
+        .sprint-label-dates { font-size: 9px; font-weight: 400; color: var(--gray-600); }
         .timeline-band:nth-child(odd) { background: #eff6ff; }
         .timeline-band:nth-child(even) { background: #dbeafe; }
 
@@ -432,9 +447,9 @@ export default function RoadmapPage() {
         .group-track-row { padding: 8px 14px; font-size: 12px; color: var(--gray-600); display: flex; align-items: center; background: var(--gray-100); border-bottom: 1px solid var(--border); }
 
         /* Track */
-        .gantt-track { position: relative; flex: 1; padding: 6px 0; display: flex; align-items: center; }
-        .gantt-bar-row { position: relative; width: 100%; display: flex; align-items: center; }
-        .gantt-bar-track { position: relative; height: 32px; width: 100%; }
+        .gantt-track { position: relative; flex-shrink: 0; padding: 6px 0; display: flex; align-items: center; overflow: visible; }
+        .gantt-bar-row { position: relative; display: flex; align-items: center; overflow: visible; }
+        .gantt-bar-track { position: relative; height: 32px; overflow: visible; }
 
         /* Bar — positioned in pixels from left of canvas */
         .gantt-bar { position: absolute; top: 4px; height: 24px; border-radius: 4px; border: 2px solid var(--blue); overflow: hidden; display: flex; align-items: center; min-width: 8px; cursor: pointer; }
@@ -552,7 +567,10 @@ export default function RoadmapPage() {
 
             {/* ── Fixed label column ── */}
             <div className="gantt-labels-col">
-              <div className="gantt-label-header">Feature</div>
+              <div className="gantt-label-header">
+                <div style={{ height: 28, background: '#1e3a5f', margin: '-1px -14px 0', padding: '0 14px', display: 'flex', alignItems: 'center', color: '#e2eaf4', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Timeline</div>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>Feature</div>
+              </div>
 
               {view === "feature" && features.map(f => (
                 <div key={f.key} className={`gantt-label ${isOverdue(f) ? "row-overdue" : isAtRisk(f) ? "row-risk" : ""}`}>
@@ -593,8 +611,18 @@ export default function RoadmapPage() {
             <div className="gantt-scroll-col" ref={scrollRef}>
               <div className="gantt-canvas" style={{ width: `${totalPx}px` }}>
 
+                {/* Month ruler */}
+                <div className="month-ruler" style={{ width: `${totalPx}px` }}>
+                  <div className="today-line" style={{ left: `${todayPx}px` }} />
+                  {monthBands.map((m, i) => (
+                    <div key={i} className="month-band" style={{ left: `${m.left}px`, width: `${m.width}px` }}>
+                      {m.label}
+                    </div>
+                  ))}
+                </div>
+
                 {/* Timeline band header */}
-                <div className="timeline-header-row">
+                <div className={`timeline-header-row ${granularity === "sprint" ? "sprint-mode" : ""}`}>
                   {/* Today line in header */}
                   <div className="today-line" style={{ left: `${todayPx}px` }} />
                   {bands.map((b, i) => {
@@ -608,7 +636,9 @@ export default function RoadmapPage() {
                       <div key={i}
                         className={`timeline-band ${granularity === "sprint" ? "sprint" : ""}`}
                         style={{ left: `${left}px`, width: `${width}px` }}>
-                        {b.name}
+                        {granularity === "sprint"
+                          ? <span>{b.name.replace("Sprint ", "")}</span>
+                          : b.name}
                       </div>
                     );
                   })}
@@ -617,7 +647,7 @@ export default function RoadmapPage() {
                 {/* Feature rows */}
                 {view === "feature" && features.map(f => (
                   <div key={f.key} className={`gantt-row ${isOverdue(f) ? "row-overdue" : isAtRisk(f) ? "row-risk" : ""}`}>
-                    <div className="gantt-track" style={{ width: `${totalPx}px` }}>
+                    <div className="gantt-track" style={{ width: `${totalPx}px`, minWidth: `${totalPx}px` }}>
                       <div className="today-line" style={{ left: `${todayPx}px` }} />
                       <GanttBar feature={f} origin={origin} granularity={granularity} sprints={data.sprints} canvasWidth={totalPx} />
                     </div>
@@ -632,7 +662,7 @@ export default function RoadmapPage() {
                     </div>
                     {aFeatures.map(f => (
                       <div key={f.key} className={`gantt-row ${isOverdue(f) ? "row-overdue" : isAtRisk(f) ? "row-risk" : ""}`}>
-                        <div className="gantt-track" style={{ width: `${totalPx}px` }}>
+                        <div className="gantt-track" style={{ width: `${totalPx}px`, minWidth: `${totalPx}px` }}>
                           <div className="today-line" style={{ left: `${todayPx}px` }} />
                           <GanttBar feature={f} origin={origin} granularity={granularity} sprints={data.sprints} canvasWidth={totalPx} />
                         </div>
@@ -649,7 +679,7 @@ export default function RoadmapPage() {
                     </div>
                     {sFeatures.map(f => (
                       <div key={f.key} className={`gantt-row ${isOverdue(f) ? "row-overdue" : isAtRisk(f) ? "row-risk" : ""}`}>
-                        <div className="gantt-track" style={{ width: `${totalPx}px` }}>
+                        <div className="gantt-track" style={{ width: `${totalPx}px`, minWidth: `${totalPx}px` }}>
                           <div className="today-line" style={{ left: `${todayPx}px` }} />
                           <GanttBar feature={f} origin={origin} granularity={granularity} sprints={data.sprints} canvasWidth={totalPx} />
                         </div>
