@@ -1,21 +1,21 @@
 import { api } from "@/lib/api";
 import { notFound } from "next/navigation";
 
-function healthToStatus(health) {
+function healthToStatus(health: string) {
   if (health === "green") return "healthy";
   if (health === "red") return "critical";
   if (health === "yellow") return "warning";
   return "unknown";
 }
 
-function statusColor(status) {
+function statusColor(status: string) {
   if (status === "healthy") return "var(--status-healthy)";
   if (status === "critical") return "var(--status-critical)";
   if (status === "warning") return "var(--status-warning)";
   return "var(--text-muted)";
 }
 
-function SectionLabel({ children }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 4 }}>
       {children}
@@ -23,7 +23,7 @@ function SectionLabel({ children }) {
   );
 }
 
-function ProgressBar({ value, status }) {
+function ProgressBar({ value, status }: { value: number; status: string }) {
   const color = statusColor(status);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -37,7 +37,7 @@ function ProgressBar({ value, status }) {
   );
 }
 
-function SprintCard({ sprint }) {
+function SprintCard({ sprint }: { sprint: any }) {
   const stateColor = sprint.state === "active" ? "var(--status-warning)" : sprint.state === "closed" ? "var(--status-healthy)" : "var(--text-muted)";
   const status = sprint.state === "active" ? "warning" : sprint.state === "closed" ? "healthy" : "unknown";
   return (
