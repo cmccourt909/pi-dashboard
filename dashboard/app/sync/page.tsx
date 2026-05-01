@@ -611,7 +611,7 @@ export default function DeliverySyncPage() {
   const [error, setError] = useState(null);
   const [parsed, setParsed] = useState(null);
   const [restoredAt, setRestoredAt] = useState(null);
-  const fileRef = useRef();
+  const fileRef = useRef<HTMLInputElement>(null);
 
   // Load persisted result on mount
   useEffect(() => {
@@ -629,7 +629,7 @@ export default function DeliverySyncPage() {
     if (!file) return;
     setFileName(file.name);
     const reader = new FileReader();
-    reader.onload = (e) => setFileText(e.target.result);
+    reader.onload = (e) => setFileText(e.target!.result as string);
     reader.readAsText(file);
   }, []);
 

@@ -75,7 +75,27 @@ def get_pi_summaries(session: Session, findings: list) -> list[PISummary]:
         sprint_summaries = []
         pi_total = pi_done = pi_blocked = 0
 
-        for sprint in sorted(pi.sprints, key=lambda s: s.name):
+        # Count issues across ALL sprints for PI totals
+        for sprint in pi.sprints:
+            issues_all = [
+                i for i in all_issues
+                if i.sprint_id == sprint.id and i.id not in excluded_story_ids
+            ]
+            pi_total += len(issues_all)
+            pi_done += sum(1 for i in issues_all if i.status_category == "done")
+            pi_blocked += sum(1 for i in issues_all if _is_blocked(i, all_links, issue_by_id))
+
+        # Save all-sprint totals for PI summary
+        pi_total_all = pi_total
+        pi_done_all = pi_done
+        pi_blocked_all = pi_blocked
+        pi_total = pi_done = pi_blocked = 0
+
+        seen_sprint_names = set()
+        for sprint in sorted([s for s in pi.sprints if __import__("re").match(r"^Sprint \d+\.\d+\.\d+$", s.name)], key=lambda s: (s.name, s.start_date is None)):
+            if sprint.name in seen_sprint_names:
+                continue
+            seen_sprint_names.add(sprint.name)
             issues = [
                 i for i in all_issues
                 if i.sprint_id == sprint.id and i.id not in excluded_story_ids
@@ -100,16 +120,16 @@ def get_pi_summaries(session: Session, findings: list) -> list[PISummary]:
             pi_done += done
             pi_blocked += blocked
 
-        pct_complete = round(pi_done / pi_total * 100, 1) if pi_total else 0.0
+        pct_complete = round(pi_done_all / pi_total_all * 100, 1) if pi_total_all else 0.0
         criticals = critical_by_pi.get(pi.name, 0)
 
         results.append(PISummary(
             name=pi.name,
             start_date=pi.start_date.date().isoformat(),
             end_date=pi.end_date.date().isoformat(),
-            total_issues=pi_total,
-            done_issues=pi_done,
-            blocked_issues=pi_blocked,
+            total_issues=pi_total_all,
+            done_issues=pi_done_all,
+            blocked_issues=pi_blocked_all,
             pct_complete=pct_complete,
             critical_findings=criticals,
             health=_health(pct_complete, criticals, pi_blocked, pi_total),

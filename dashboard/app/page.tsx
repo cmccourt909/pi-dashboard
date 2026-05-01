@@ -1,7 +1,7 @@
 import { api, healthToStatus } from "@/lib/api";
 import PICard from "@/components/PICard";
 
-function SectionLabel({ children }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-secondary)", marginBottom: 6 }}>
       {children}
@@ -9,7 +9,7 @@ function SectionLabel({ children }) {
   );
 }
 
-function Stat({ label, value, accent }) {
+function Stat({ label, value, accent }: { label: string; value: string | number; accent?: string }) {
   return (
     <div>
       <SectionLabel>{label}</SectionLabel>
@@ -20,13 +20,13 @@ function Stat({ label, value, accent }) {
   );
 }
 
-function severityColor(s) {
+function severityColor(s: string) {
   if (s === "critical") return "var(--status-critical)";
   if (s === "warning") return "var(--status-warning)";
   return "var(--accent)";
 }
 
-function FindingsPanel({ findings }) {
+function FindingsPanel({ findings }: { findings: any[] }) {
   const critical = findings.filter((f) => f.severity === "critical");
   const warning  = findings.filter((f) => f.severity === "warning");
   const info     = findings.filter((f) => f.severity === "info");

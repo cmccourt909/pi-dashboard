@@ -10,7 +10,7 @@ function healthToStatus(health) {
   return "unknown";
 }
 
-function SectionLabel({ children }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-secondary)", marginBottom: 5 }}>
       {children}
@@ -18,7 +18,7 @@ function SectionLabel({ children }) {
   );
 }
 
-export default function PICard({ pi }) {
+export default function PICard({ pi }: { pi: any }) {
   const status = healthToStatus(pi.health);
   const href   = "/pi/" + pi.name;
 
