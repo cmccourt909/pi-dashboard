@@ -318,7 +318,14 @@ def ingest_stories_csv(df: pd.DataFrame, session: Session) -> dict:
 
         summary = str(row.get(COL_SUMMARY, "")).strip()
         status = str(row.get(COL_STATUS, "")).strip()
-        sprint_name = str(row.get(COL_SPRINT, "")).strip()
+        _raw_sprint = str(row.get(COL_SPRINT, "")).strip()
+        _m = re.search(r'name=([^,\]]+)', _raw_sprint)
+        sprint_name = _m.group(1).strip() if _m else _raw_sprint
+        # Normalize team-prefixed sprint names → canonical "Sprint 26.x.x"
+        sprint_name = re.sub(
+            r'^(?:TSU|ISC|PNR|PGM|Panthers|EVCOTSU|EVCOISC|EVEXPNR)\s+',
+            '', sprint_name, flags=re.IGNORECASE
+        )
         feature_link = str(row.get(COL_FEATURE_LINK, "")).strip()
         pi_raw = str(row.get(COL_PI, "")).strip()
         assignee = str(row.get(COL_ASSIGNEE, "")).strip() or None
