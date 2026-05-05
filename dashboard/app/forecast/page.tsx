@@ -377,6 +377,7 @@ export default function ForecastPage() {
   const [pis,         setPIs]         = useState([]);
   const [features,    setFeatures]    = useState([]);
   const [rawFeatures, setRawFeatures] = useState([]);
+  const [velocityOverride, setVelocityOverride] = useState("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -419,7 +420,12 @@ export default function ForecastPage() {
   useEffect(() => { loadData(); }, [loadData]);
 
   // ── Derived values ───────────────────────────────────────────────────────────
-  const vStats         = useMemo(() => velocityStats(pis, rawFeatures), [pis, rawFeatures]);
+  const vStatsRaw = useMemo(() => velocityStats(pis, rawFeatures), [pis, rawFeatures]);
+  const vStats    = useMemo(() => {
+    const ov = parseFloat(velocityOverride);
+    if (!velocityOverride || isNaN(ov) || ov <= 0) return vStatsRaw;
+    return { ...vStatsRaw, mean: ov, stdDev: Math.round(ov * 0.2 * 10) / 10, source: "manual-override" };
+  }, [vStatsRaw, velocityOverride]);
   const sprintTimeline = useMemo(() => buildSprintTimeline(pis), [pis]);
 
   const velocityChartData = useMemo(() =>
@@ -545,19 +551,44 @@ export default function ForecastPage() {
               <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
                 <StatPill label="PIs Tracked"      value={pis.length}       sub={pis.length ? `${pis[0].name} → ${pis[pis.length-1].name}` : "—"} />
                 <StatPill label="Features"          value={features.length}  sub="with planned dates" />
-                <StatPill label="Avg Velocity"      value={`${vStats.mean}`} sub={`${vStats.unit ?? "SP"}/sprint · ±${vStats.stdDev} · source: ${
+                <StatPill label="Avg Velocity"      value={`${vStats.mean}`} sub={`${vStats.unit ?? "SP"}/sprint · ${
+    vStats.source === "manual-override" ? "⚠ manual override" :
     vStats.source === "sprint-SP"  ? `${vStats.count} sprints w/ SP` :
     vStats.source === "PI-SP"      ? `${vStats.count} PI(s) SP total` :
     vStats.source === "PI-issues"  ? `${vStats.count} PI(s) issue count` :
     "default estimate"
-  }`} color="#1a6ca8" />
+  }`} color={vStats.source === "manual-override" ? "#d68910" : "#1a6ca8"} />
                 <StatPill label="Features At Risk"  value={atRiskCount}      sub={`of ${features.length}`} color="#d68910" />
                 <StatPill label="Blocked"           value={blockedCount}     sub="features" color="#c0392b" />
+              </div>
+
+              {/* Velocity override control */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, background: "#fff", border: "1px solid #dce3ea", borderRadius: 8, padding: "10px 16px", flexWrap: "wrap" }}>
+                <span style={{ fontSize: 12, color: "#5a6a7a", fontWeight: 600 }}>Velocity Override</span>
+                <input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  placeholder={`Calculated: ${vStatsRaw.mean}`}
+                  value={velocityOverride}
+                  onChange={e => setVelocityOverride(e.target.value)}
+                  style={{ width: 130, padding: "5px 10px", fontSize: 13, border: "1px solid #dce3ea", borderRadius: 6, color: "#1a2b3c", outline: "none" }}
+                />
+                <span style={{ fontSize: 12, color: "#7a8a99" }}>{vStats.unit ?? "SP"}/sprint</span>
+                {velocityOverride && (
+                  <button onClick={() => setVelocityOverride("")} style={{ background: "#fdecea", border: "1px solid #f5c6c6", borderRadius: 6, padding: "4px 10px", fontSize: 11, color: "#c0392b", cursor: "pointer", fontWeight: 600 }}>✕ Clear</button>
+                )}
+                <span style={{ fontSize: 11, color: velocityOverride ? "#d68910" : "#7a8a99", marginLeft: 4 }}>
+                  {velocityOverride
+                    ? `⚠ Using manual override (calculated: ${vStatsRaw.mean})`
+                    : `Using calculated velocity from ${vStatsRaw.source === "sprint-SP" ? `${vStatsRaw.count} sprints` : vStatsRaw.source === "PI-issues" ? `${vStatsRaw.count} PI(s)` : "default estimate"}`}
+                </span>
               </div>
 
               <SectionHeader
                 title="Program Increment Forecasts"
                 subtitle={`Monte Carlo · 2,000 simulations · ${vStats.mean} ${vStats.unit ?? "SP"}/sprint · ${
+    vStats.source === "manual-override" ? `manual override (calculated was ${vStatsRaw.mean})` :
     vStats.source === "sprint-SP" ? `measured from ${vStats.count} sprints` :
     vStats.source === "PI-SP"     ? `estimated from PI SP totals` :
     vStats.source === "PI-issues" ? `estimated from PI issue throughput` :

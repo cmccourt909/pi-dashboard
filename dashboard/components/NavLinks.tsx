@@ -6,6 +6,7 @@ const LINKS = [
   { href: "/", label: "PI Overview" },
   { href: "/features", label: "Features" },
   { href: "/roadmap", label: "Roadmap" },
+  { href: "/forecast", label: "Forecast" },
   { href: "/admin", label: "Admin", muted: true },
 ];
 
