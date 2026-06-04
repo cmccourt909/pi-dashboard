@@ -42,24 +42,31 @@ def get_pi_summaries(session: Session, findings: list) -> list[PISummary]:
         select(ProgramIncrement).order_by(ProgramIncrement.name)
     ).all()
 
+    # Pre-load all data into memory to avoid N+1 queries
+    all_links = session.scalars(select(IssueLink)).all()
+    all_issues = session.scalars(select(Issue)).all()
+    all_sprints = session.scalars(select(Sprint)).all()
+    issue_by_id = {i.id: i for i in all_issues}
+    issue_by_key = {i.jira_key: i for i in all_issues}
+    sprint_by_id = {s.id: s for s in all_sprints}
+
+    # Build PI name lookup from sprints
+    pi_by_id = {pi.id: pi for pi in pis}
+
     critical_by_pi: dict[str, int] = {}
     for f in findings:
         if f.severity.value == "critical":
             pi_names_hit = set()
             for key in f.issue_keys:
-                issue = session.scalars(
-                    select(Issue).where(Issue.jira_key == key)
-                ).first()
+                issue = issue_by_key.get(key)
                 if issue and issue.sprint_id:
-                    sprint = session.get(Sprint, issue.sprint_id)
-                    if sprint and sprint.pi:
-                        pi_names_hit.add(sprint.pi.name)
+                    sprint = sprint_by_id.get(issue.sprint_id)
+                    if sprint and sprint.pi_id:
+                        pi_obj = pi_by_id.get(sprint.pi_id)
+                        if pi_obj:
+                            pi_names_hit.add(pi_obj.name)
             for pi_name in pi_names_hit:
                 critical_by_pi[pi_name] = critical_by_pi.get(pi_name, 0) + 1
-
-    all_links = session.scalars(select(IssueLink)).all()
-    all_issues = session.scalars(select(Issue)).all()
-    issue_by_id = {i.id: i for i in all_issues}
 
     # Build set of story IDs belonging to excluded features
     all_memberships = session.scalars(select(FeatureMembership)).all()
@@ -144,20 +151,26 @@ def get_feature_summaries(session: Session, findings: list) -> list[FeatureSumma
     memberships = session.scalars(select(FeatureMembership)).all()
     all_issues = session.scalars(select(Issue)).all()
     all_links = session.scalars(select(IssueLink)).all()
+    all_sprints = session.scalars(select(Sprint)).all()
+    all_projects = session.scalars(select(Project)).all()
     issue_by_id = {i.id: i for i in all_issues}
+    issue_by_key = {i.jira_key: i for i in all_issues}
+    sprint_by_id = {s.id: s for s in all_sprints}
+    project_by_id = {p.id: p for p in all_projects}
+
+    # Pre-build membership index: issue_id -> feature_issue_id
+    membership_by_issue_id: dict[int, int] = {}
+    for m in memberships:
+        membership_by_issue_id[m.issue_id] = m.feature_issue_id
 
     critical_by_feature: dict[int, int] = {}
     for f in findings:
         if f.severity.value == "critical":
             for key in f.issue_keys:
-                issue = session.scalars(
-                    select(Issue).where(Issue.jira_key == key)
-                ).first()
-                if issue:
-                    for m in memberships:
-                        if m.issue_id == issue.id:
-                            fid = m.feature_issue_id
-                            critical_by_feature[fid] = critical_by_feature.get(fid, 0) + 1
+                issue = issue_by_key.get(key)
+                if issue and issue.id in membership_by_issue_id:
+                    fid = membership_by_issue_id[issue.id]
+                    critical_by_feature[fid] = critical_by_feature.get(fid, 0) + 1
 
     feature_ids = list({m.feature_issue_id for m in memberships})
     results = []
@@ -181,8 +194,8 @@ def get_feature_summaries(session: Session, findings: list) -> list[FeatureSumma
 
         story_summaries = []
         for s in sorted(stories, key=lambda x: x.jira_key):
-            sprint = session.get(Sprint, s.sprint_id) if s.sprint_id else None
-            project = session.get(Project, s.project_id)
+            sprint = sprint_by_id.get(s.sprint_id) if s.sprint_id else None
+            project = project_by_id.get(s.project_id)
             story_summaries.append(FeatureStorySummary(
                 jira_key=s.jira_key,
                 summary=s.summary,

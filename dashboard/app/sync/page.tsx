@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { API_BASE } from "@/lib/api";
 
 // ─── Palette & tokens ────────────────────────────────────────────────────────
 const CSS = `
@@ -472,9 +473,9 @@ const CSS = `
   .dsp-sync-meta span { display: flex; align-items: center; gap: 5px; }
 `;
 
-// ─── Mock mode ───────────────────────────────────────────────────────────────
-// Set to false once Anthropic API billing is active
-const MOCK_MODE = true;
+// ─── API integration ─────────────────────────────────────────────────────────
+// Calls /api/parse-sync which uses the Anthropic API on the server side.
+// Falls back to mock data if the API returns an error (e.g. key not configured).
 
 const MOCK_RESPONSE = {
   meta: {
@@ -574,26 +575,28 @@ Schema:
 }
 Infer overallStatus: Green = on track, Yellow = risks managed, Red = blocked.`;
 
-async function parseWithClaude(text) {
-  // ── Mock mode: returns realistic data without hitting the API ──
-  if (MOCK_MODE) {
-    await new Promise((r) => setTimeout(r, 1200)); // simulate network delay
-    return MOCK_RESPONSE;
+async function parseWithClaude(text: string): Promise<{ data: unknown; usedMock: boolean }> {
+  try {
+    const resp = await fetch("/api/parse-sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: `Server error ${resp.status}` }));
+      throw new Error(err.error || `Server error ${resp.status}`);
+    }
+    const data = await resp.json();
+    return { data, usedMock: false };
+  } catch (e: unknown) {
+    // If API call fails (key not configured, network error, etc.), fall back to mock
+    console.warn("parse-sync API unavailable, using mock data:", (e as Error).message);
+    await new Promise((r) => setTimeout(r, 800));
+    return { data: MOCK_RESPONSE, usedMock: true };
   }
-  // ── Live mode: uncomment when API billing is active ──
-  const resp = await fetch("/api/parse-sync", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
-  });
-  if (!resp.ok) {
-    const err = await resp.json();
-    throw new Error(err.error || `Server error ${resp.status}`);
-  }
-  return resp.json();
 }
 
-function CatChip({ cat }) {
+function CatChip({ cat }: { cat: string }) {
   const cls = ["Regulatory", "Data", "Testing", "Infrastructure"].includes(cat) ? cat : "Default";
   return <span className={`dsp-cat-chip ${cls}`}>{cat}</span>;
 }
@@ -602,15 +605,16 @@ function CatChip({ cat }) {
 const STORAGE_KEY = "dsp_last_result";
 
 export default function DeliverySyncPage() {
-  const [tab, setTab] = useState("paste");
+  const [tab, setTab] = useState<"paste" | "upload">("paste");
   const [pasteText, setPasteText] = useState("");
-  const [fileName, setFileName] = useState(null);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [fileText, setFileText] = useState("");
   const [drag, setDrag] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [parsed, setParsed] = useState(null);
-  const [restoredAt, setRestoredAt] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [parsed, setParsed] = useState<Record<string, unknown> | null>(null);
+  const [usedMock, setUsedMock] = useState(false);
+  const [restoredAt, setRestoredAt] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Load persisted result on mount
@@ -618,14 +622,15 @@ export default function DeliverySyncPage() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        const { data, savedAt } = JSON.parse(saved);
+        const { data, usedMock: savedMock, savedAt } = JSON.parse(saved);
         setParsed(data);
+        setUsedMock(savedMock ?? false);
         setRestoredAt(savedAt);
       }
     } catch { /* ignore */ }
   }, []);
 
-  const handleFile = useCallback((file) => {
+  const handleFile = useCallback((file: File | undefined) => {
     if (!file) return;
     setFileName(file.name);
     const reader = new FileReader();
@@ -634,7 +639,7 @@ export default function DeliverySyncPage() {
   }, []);
 
   const onDrop = useCallback(
-    (e) => {
+    (e: React.DragEvent) => {
       e.preventDefault();
       setDrag(false);
       handleFile(e.dataTransfer.files[0]);
@@ -648,17 +653,20 @@ export default function DeliverySyncPage() {
     setLoading(true);
     setError(null);
     setParsed(null);
+    setUsedMock(false);
     try {
-      const result = await parseWithClaude(text);
-      setParsed(result);
+      const { data, usedMock: isMock } = await parseWithClaude(text);
+      setParsed(data as Record<string, unknown>);
+      setUsedMock(isMock);
       setRestoredAt(null);
       // Persist to localStorage
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        data: result,
+        data,
+        usedMock: isMock,
         savedAt: new Date().toISOString(),
       }));
-    } catch (e) {
-      setError(e.message || "Failed to parse document.");
+    } catch (e: unknown) {
+      setError((e as Error).message || "Failed to parse document.");
     } finally {
       setLoading(false);
     }
@@ -670,12 +678,13 @@ export default function DeliverySyncPage() {
     setFileName(null);
     setParsed(null);
     setError(null);
+    setUsedMock(false);
     setRestoredAt(null);
     localStorage.removeItem(STORAGE_KEY);
   };
 
-  const statusColor = { Green: "green", Yellow: "amber", Red: "red" };
-  const statusLabel = { Green: "HEALTHY", Yellow: "AT RISK", Red: "CRITICAL" };
+  const statusColor: Record<string, string> = { Green: "green", Yellow: "amber", Red: "red" };
+  const statusLabel: Record<string, string> = { Green: "HEALTHY", Yellow: "AT RISK", Red: "CRITICAL" };
 
   return (
     <>
@@ -685,7 +694,7 @@ export default function DeliverySyncPage() {
         <div className="dsp-eyebrow">Delivery Sync</div>
         <div className="dsp-title">
           PI Health Enrichment
-          {MOCK_MODE && <span className="dsp-mock-badge">Mock</span>}
+          {usedMock && <span className="dsp-mock-badge">Fallback Mode</span>}
         </div>
 
         {/* Ingest panel */}
