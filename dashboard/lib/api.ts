@@ -1,4 +1,14 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// Server-side uses BACKEND_URL (internal Docker network), client-side uses relative paths
+function getApiBase(): string {
+  if (typeof window === "undefined") {
+    // Server-side: use internal Docker URL or fallback
+    return process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  }
+  // Client-side: use relative path (proxied by nginx or Next.js rewrites)
+  return "";
+}
+
+export const API_BASE = getApiBase();
 
 export interface SprintData {
   jira_id: number;
