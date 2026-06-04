@@ -5,3 +5,4 @@ __pycache__/
 *.pyc
 check2.py
 check.py
+.htpasswd

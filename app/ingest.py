@@ -283,7 +283,7 @@ def ingest_issues(
         if field_id not in wanted_fields:
             wanted_fields.append(field_id)
 
-    pulled_at = datetime.utcnow()
+    pulled_at = datetime.now(timezone.utc)
     count = 0
     pending_links: list[tuple[str, str, str]] = []   # (src_key, tgt_key, type)
     pending_feature_membership: list[tuple[str, str, str]] = []  # (issue_key, feature_key, source)

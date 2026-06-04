@@ -53,6 +53,7 @@ export default function AdminPage() {
   const [result, setResult] = useState<UploadResult | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [history, setHistory] = useState<UploadResult[]>([]);
+  const [uploadKey, setUploadKey] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const upload = useCallback(async (file: File) => {
@@ -64,9 +65,14 @@ export default function AdminPage() {
     form.append("file", file);
 
     try {
+      const headers: Record<string, string> = {};
+      if (uploadKey) {
+        headers["X-Upload-Key"] = uploadKey;
+      }
       const res = await fetch(`${API_BASE}/api/upload`, {
         method: "POST",
         body: form,
+        headers,
       });
       const json = await res.json();
       if (!res.ok) {
@@ -178,6 +184,39 @@ export default function AdminPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ── upload key ── */}
+      <div style={{ marginBottom: 20 }}>
+        <label
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            color: "var(--text-secondary)",
+            display: "block",
+            marginBottom: 6,
+          }}
+        >
+          UPLOAD API KEY
+        </label>
+        <input
+          type="password"
+          placeholder="Enter upload key..."
+          value={uploadKey}
+          onChange={(e) => setUploadKey(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "8px 12px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 12,
+            border: "1px solid var(--border)",
+            borderRadius: 4,
+            background: "var(--bg-panel)",
+            color: "var(--text-primary)",
+          }}
+        />
       </div>
 
       {/* ── drop zone ── */}

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   const { text } = await req.json();
-console.log("KEY:", process.env.ANTHROPIC_API_KEY?.slice(0, 10));
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
        headers: {

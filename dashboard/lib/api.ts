@@ -53,6 +53,6 @@ export const api = {
 export function healthToStatus(health: string) {
   if (health === "green") return "healthy" as const;
   if (health === "red") return "critical" as const;
-  if (health === "yellow") return "warning" as const;
+  if (health === "amber" || health === "yellow") return "warning" as const;
   return "unknown" as const;
 }

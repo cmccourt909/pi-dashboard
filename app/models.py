@@ -16,7 +16,7 @@ Run this file directly to create the schema:  python -m app.models
 from __future__ import annotations
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -40,13 +40,20 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship,
 
 class Base(DeclarativeBase):
     pass
+
+
+def _utcnow() -> datetime:
+    """Return current UTC time as a timezone-aware datetime."""
+    return datetime.now(timezone.utc)
+
+
 class Organization(Base):
     """A delivery organization. One org can have multiple Jira instances (sites)."""
     __tablename__ = "organization"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
     sites: Mapped[list["Site"]] = relationship(back_populates="org")
     program_increments: Mapped[list["ProgramIncrement"]] = relationship(back_populates="org")
@@ -84,7 +91,7 @@ class Site(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     base_url: Mapped[str] = mapped_column(String(500), unique=True)
     display_name: Mapped[str] = mapped_column(String(200))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
     field_mappings: Mapped[list["FieldMapping"]] = relationship(back_populates="site")
     projects: Mapped[list["Project"]] = relationship(back_populates="site")
@@ -104,7 +111,7 @@ class FieldMapping(Base):
     site_id: Mapped[int] = mapped_column(ForeignKey("site.id"))
     concept: Mapped[str] = mapped_column(String(100))   # 'story_points', 'feature_link', ...
     jira_field_id: Mapped[str] = mapped_column(String(100))   # 'customfield_10016'
-    discovered_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    discovered_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
     site: Mapped[Site] = relationship(back_populates="field_mappings")
 
@@ -124,7 +131,7 @@ class RawIssueSnapshot(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     site_id: Mapped[int] = mapped_column(ForeignKey("site.id"))
     issue_key: Mapped[str] = mapped_column(String(50))   # e.g. 'PNR-1'
-    pulled_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    pulled_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, index=True)
     payload: Mapped[dict] = mapped_column(JSON)   # the full Jira response
 
 
@@ -207,7 +214,7 @@ class Issue(Base):
     resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     due_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
-    last_ingested_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    last_ingested_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
     project: Mapped[Project] = relationship(back_populates="issues")
     sprint: Mapped[Optional[Sprint]] = relationship()

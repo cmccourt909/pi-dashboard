@@ -10,6 +10,8 @@ Usage (as a library):
 """
 from __future__ import annotations
 
+import time
+import threading
 from collections import defaultdict
 from datetime import date
 from typing import Iterable
@@ -31,6 +33,36 @@ except ImportError:
     )
     from rules import Category, Context, Finding, Severity, all_rules  # type: ignore
     from rules import checks as _checks  # noqa
+
+
+# ---------- TTL cache for run_site results ----------
+
+_cache_lock = threading.Lock()
+_cache: dict[str, tuple[float, tuple["Context", list["Finding"]]]] = {}
+_CACHE_TTL_SECONDS = 30
+
+
+def _get_cached(key: str) -> tuple["Context", list["Finding"]] | None:
+    with _cache_lock:
+        entry = _cache.get(key)
+        if entry is None:
+            return None
+        ts, value = entry
+        if time.time() - ts > _CACHE_TTL_SECONDS:
+            del _cache[key]
+            return None
+        return value
+
+
+def _set_cached(key: str, value: tuple["Context", list["Finding"]]):
+    with _cache_lock:
+        _cache[key] = (time.time(), value)
+
+
+def invalidate_cache():
+    """Clear the engine cache. Call after data ingestion/upload."""
+    with _cache_lock:
+        _cache.clear()
 
 
 def build_context(session: Session, site: Site, today: date | None = None) -> Context:
@@ -91,6 +123,11 @@ def run_rules(ctx: Context) -> list[Finding]:
 
 
 def run_site(site_id: int | None = None, today: date | None = None) -> tuple[Context, list[Finding]]:
+    cache_key = f"{site_id}:{today}"
+    cached = _get_cached(cache_key)
+    if cached is not None:
+        return cached
+
     SessionLocal = get_session_maker()
     with SessionLocal() as session:
         if site_id is None:
@@ -101,4 +138,6 @@ def run_site(site_id: int | None = None, today: date | None = None) -> tuple[Con
             raise RuntimeError("No Site found. Run ingest first.")
         ctx = build_context(session, site, today)
         findings = run_rules(ctx)
-        return ctx, findings
+        result = (ctx, findings)
+        _set_cached(cache_key, result)
+        return result

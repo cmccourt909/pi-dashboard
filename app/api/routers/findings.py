@@ -25,6 +25,6 @@ def list_findings(
             title=f.title,
             detail=f.detail,
             recommendation=f.recommendation,
-            issue_keys=f.issue_keys,
+            issue_keys=list(f.issue_keys),
         ))
     return result

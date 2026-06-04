@@ -1,4 +1,5 @@
 ﻿from __future__ import annotations
+import re
 from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -92,7 +93,7 @@ def get_pi_summaries(session: Session, findings: list) -> list[PISummary]:
         pi_total = pi_done = pi_blocked = 0
 
         seen_sprint_names = set()
-        for sprint in sorted([s for s in pi.sprints if __import__("re").match(r"^Sprint \d+\.\d+\.\d+$", s.name)], key=lambda s: (s.name, s.start_date is None)):
+        for sprint in sorted([s for s in pi.sprints if re.match(r"^Sprint \d+\.\d+\.\d+$", s.name)], key=lambda s: (s.name, s.start_date is None)):
             if sprint.name in seen_sprint_names:
                 continue
             seen_sprint_names.add(sprint.name)

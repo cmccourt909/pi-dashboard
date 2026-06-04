@@ -6,7 +6,7 @@ import ProgressBar from "@/components/ProgressBar";
 function healthToStatus(health) {
   if (health === "green")  return "healthy";
   if (health === "red")    return "critical";
-  if (health === "yellow") return "warning";
+  if (health === "amber" || health === "yellow") return "warning";
   return "unknown";
 }
 

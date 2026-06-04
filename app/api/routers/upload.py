@@ -18,17 +18,16 @@ Returns JSON:
 from __future__ import annotations
 
 import io
+import os
 import re
 from datetime import datetime
 from html.parser import HTMLParser
 from typing import Optional
 
 import pandas as pd
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-
-import os
 from app.models import (
     FeatureMembership,
     Issue,
@@ -42,6 +41,7 @@ from app.models import (
     SprintState,
     get_session_maker,
 )
+from app.engine import invalidate_cache
 from sqlalchemy import select
 
 
@@ -63,6 +63,25 @@ def _write_roadmap_dates(issue_id: int, target_start: Optional[str], target_end:
         return str(e)
 
 router = APIRouter(prefix="/api/upload", tags=["upload"])
+
+
+# ---------------------------------------------------------------------------
+# Authentication — require UPLOAD_API_KEY header for upload endpoint
+# ---------------------------------------------------------------------------
+
+UPLOAD_API_KEY = os.environ.get("UPLOAD_API_KEY", "")
+
+
+def verify_upload_key(x_upload_key: Optional[str] = Header(None)):
+    """Require a valid API key for upload operations."""
+    if not UPLOAD_API_KEY:
+        # If no key is configured, reject all requests to prevent open access
+        raise HTTPException(
+            status_code=403,
+            detail="Upload API key not configured on server. Set UPLOAD_API_KEY env var.",
+        )
+    if x_upload_key != UPLOAD_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid or missing X-Upload-Key header.")
 
 
 # ---------------------------------------------------------------------------
@@ -674,7 +693,7 @@ def _detect_file_type(filename: str, df: pd.DataFrame) -> str:
 # ---------------------------------------------------------------------------
 
 @router.post("")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), _auth: None = Depends(verify_upload_key)):
     filename = file.filename or ""
     content = await file.read()
 
@@ -710,6 +729,9 @@ async def upload_file(file: UploadFile = File(...)):
                 result = ingest_features_xlsx(df, session)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ingestion error: {e}")
+
+    # Invalidate engine cache so new data is reflected immediately
+    invalidate_cache()
 
     return JSONResponse({
         "status": "ok",
