@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import NavLinks from "@/components/NavLinks";
 import AutoRefresh from "@/components/AutoRefresh";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -56,7 +57,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
         <main style={{ maxWidth: "100%", margin: "0 auto", padding: "28px 32px 64px" }}>
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </main>
       </body>
     </html>
