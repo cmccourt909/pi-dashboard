@@ -1,0 +1,28 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# GitHub Actions: Deploy to EC2 on push to main
+#
+# Secrets needed (set in repo Settings → Secrets → Actions):
+#   EC2_HOST        — Elastic IP of your server
+#   EC2_SSH_KEY     — Private SSH key (contents of ~/.ssh/id_ed25519)
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /opt/pi-dashboard
+            ./deploy-prod.sh
