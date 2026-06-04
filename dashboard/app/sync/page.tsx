@@ -612,7 +612,8 @@ export default function DeliverySyncPage() {
   const [drag, setDrag] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [parsed, setParsed] = useState<Record<string, unknown> | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [parsed, setParsed] = useState<any | null>(null);
   const [usedMock, setUsedMock] = useState(false);
   const [restoredAt, setRestoredAt] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -656,7 +657,7 @@ export default function DeliverySyncPage() {
     setUsedMock(false);
     try {
       const { data, usedMock: isMock } = await parseWithClaude(text);
-      setParsed(data as Record<string, unknown>);
+      setParsed(data);
       setUsedMock(isMock);
       setRestoredAt(null);
       // Persist to localStorage
