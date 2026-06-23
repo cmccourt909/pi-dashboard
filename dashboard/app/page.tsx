@@ -48,15 +48,15 @@ function FindingsPanel({ findings }: { findings: any[] }) {
       </div>
       <div style={{ maxHeight: 560, overflowY: "auto" }}>
         {findings.map((f, i) => (
-          <div key={f.id ?? i} style={{ padding: "14px 20px", borderBottom: i < findings.length - 1 ? "1px solid var(--border)" : "none", borderLeft: "3px solid " + severityColor(f.severity) }}>
+          <div key={f.rule_id ?? i} style={{ padding: "14px 20px", borderBottom: i < findings.length - 1 ? "1px solid var(--border)" : "none", borderLeft: "3px solid " + severityColor(f.severity) }}>
             <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: severityColor(f.severity), textTransform: "uppercase", letterSpacing: "0.12em" }}>{f.severity}</span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-secondary)", letterSpacing: "0.08em" }}>{f.category}</span>
             </div>
             <p style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", marginBottom: 5 }}>{f.title}</p>
-            <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.5 }}>{f.description}</p>
+            <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.5 }}>{f.detail}</p>
             <p style={{ fontSize: 13, color: "var(--status-warning)", marginTop: 6 }}>→ {f.recommendation}</p>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>{f.affected_entity}</p>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>{f.issue_keys?.join(", ")}</p>
           </div>
         ))}
       </div>

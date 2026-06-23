@@ -44,24 +44,6 @@ from app.models import (
 from app.engine import invalidate_cache
 from sqlalchemy import select
 
-
-def _write_roadmap_dates(issue_id: int, target_start: Optional[str], target_end: Optional[str]) -> Optional[str]:
-    """Write roadmap dates via the SQLAlchemy engine, committing in its own connection."""
-    if not target_start and not target_end:
-        return None
-    try:
-        from app.models import get_engine
-        from sqlalchemy import text as _text
-        engine = get_engine()
-        with engine.begin() as conn:
-            conn.execute(
-                _text("UPDATE issue SET target_start_date = :ts, target_end_date = :te WHERE id = :id"),
-                {"ts": target_start, "te": target_end, "id": issue_id}
-            )
-        return None
-    except Exception as e:
-        return str(e)
-
 router = APIRouter(prefix="/api/upload", tags=["upload"])
 
 
@@ -636,11 +618,13 @@ def ingest_roadmap_xlsx(df: pd.DataFrame, session: Session) -> dict:
             if due_date:
                 from datetime import datetime as _dt
                 existing.due_date = _dt.fromisoformat(due_date)
+            if target_start:
+                from datetime import datetime as _dt
+                existing.target_start_date = _dt.fromisoformat(target_start)
+            if target_end:
+                from datetime import datetime as _dt
+                existing.target_end_date = _dt.fromisoformat(target_end)
             session.flush()
-            # Write roadmap dates via direct sqlite3 (bypasses SQLAlchemy cache)
-            err = _write_roadmap_dates(existing.id, target_start, target_end)
-            if err:
-                warnings.append(f"{jira_key}: could not set roadmap dates — {err}")
             inserted["features_updated"] += 1
         else:
             new_issue = _upsert_issue(
@@ -657,11 +641,13 @@ def ingest_roadmap_xlsx(df: pd.DataFrame, session: Session) -> dict:
             if due_date:
                 from datetime import datetime as _dt
                 new_issue.due_date = _dt.fromisoformat(due_date)
+            if target_start:
+                from datetime import datetime as _dt
+                new_issue.target_start_date = _dt.fromisoformat(target_start)
+            if target_end:
+                from datetime import datetime as _dt
+                new_issue.target_end_date = _dt.fromisoformat(target_end)
             session.flush()
-            # Write roadmap dates via direct sqlite3 (bypasses SQLAlchemy cache)
-            err = _write_roadmap_dates(new_issue.id, target_start, target_end)
-            if err:
-                warnings.append(f"{jira_key}: could not set roadmap dates — {err}")
             inserted["features_created"] += 1
 
     session.commit()
