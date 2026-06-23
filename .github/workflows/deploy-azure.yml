@@ -5,13 +5,13 @@
 # Builds Docker images, pushes to ACR, deploys Container Apps.
 #
 # Secrets needed (set in repo Settings → Secrets → Actions):
-#   AZURE_CLIENT_ID         — Service principal Application (client) ID
-#   AZURE_CLIENT_SECRET     — Service principal client secret
-#   AZURE_TENANT_ID         — Azure AD Directory (tenant) ID
-#   AZURE_SUBSCRIPTION_ID   — Azure subscription ID
+#   AZURE_CREDENTIALS       — Service principal JSON (see below for format)
 #   DB_ADMIN_PASSWORD       — PostgreSQL admin password
 #   UPLOAD_API_KEY          — Backend upload endpoint auth key
 #   ANTHROPIC_API_KEY       — (Optional) For AI sync parsing
+#
+#   AZURE_CREDENTIALS format (single-line JSON):
+#   {"clientId":"<appId>","clientSecret":"<password>","subscriptionId":"<subId>","tenantId":"<tenantId>"}
 #
 # Variables needed (set in repo Settings → Variables → Actions):
 #   AZURE_RESOURCE_GROUP    — Target resource group (e.g. rg-pi-dashboard-uat)
@@ -58,10 +58,7 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Get ACR login server
         id: get-acr
@@ -111,10 +108,7 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Ensure resource group exists
         run: |
