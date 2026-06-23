@@ -72,6 +72,7 @@ jobs:
               environmentName=${{ env.ENVIRONMENT_NAME }} \
               projectName=${{ env.PROJECT_NAME }} \
               imageTag=${{ env.IMAGE_TAG }} \
+              useDefaultImage=true \
               dbAdminPassword='${{ secrets.DB_ADMIN_PASSWORD }}' \
               uploadApiKey='${{ secrets.UPLOAD_API_KEY }}' \
               anthropicApiKey='${{ secrets.ANTHROPIC_API_KEY }}' \
