@@ -43,10 +43,6 @@ param uploadApiKey string
 @description('CORS origins (comma-separated)')
 param corsOrigins string = ''
 
-@description('Anthropic API key for AI sync parsing (optional)')
-@secure()
-param anthropicApiKey string = ''
-
 @description('Container image tag (defaults to latest)')
 param imageTag string = 'latest'
 
@@ -317,10 +313,6 @@ resource frontendApp 'Microsoft.App/containerApps@2024-03-01' = {
           name: 'acr-password'
           value: acr.listCredentials().passwords[0].value
         }
-        {
-          name: 'anthropic-api-key'
-          value: anthropicApiKey
-        }
       ]
     }
     template: {
@@ -336,10 +328,6 @@ resource frontendApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'BACKEND_URL'
               value: 'https://${backendApp.properties.configuration.ingress.fqdn}'
-            }
-            {
-              name: 'ANTHROPIC_API_KEY'
-              secretRef: 'anthropic-api-key'
             }
           ]
           probes: [
