@@ -144,6 +144,12 @@ jobs:
             --command "python -m app.models" \
             || echo "Migration may have already been applied or app is still starting"
 
+          az containerapp exec \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
+            --name ${{ env.PROJECT_NAME }}-${{ env.ENV_NAME_LOWER }}-backend \
+            --command "python -m app.migrations.add_roadmap_dates" \
+            || echo "Roadmap dates migration may have already been applied"
+
       # ─── Step 5: Output deployment URLs ────────────────────────────────────
       - name: Get deployment URLs
         run: |
