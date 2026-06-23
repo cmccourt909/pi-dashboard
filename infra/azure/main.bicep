@@ -59,7 +59,7 @@ param entraTenantId string = ''
 @description('Backend minimum replicas (0 for scale-to-zero)')
 @minValue(0)
 @maxValue(5)
-param backendMinReplicas int = 0
+param backendMinReplicas int = 1
 
 @description('Backend maximum replicas')
 @minValue(1)
@@ -69,7 +69,7 @@ param backendMaxReplicas int = 3
 @description('Frontend minimum replicas (0 for scale-to-zero)')
 @minValue(0)
 @maxValue(5)
-param frontendMinReplicas int = 0
+param frontendMinReplicas int = 1
 
 @description('Frontend maximum replicas')
 @minValue(1)
