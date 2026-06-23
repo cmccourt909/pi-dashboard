@@ -1,14 +1,22 @@
 from __future__ import annotations
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from app.api.routers.pis import router as pis_router
 from app.api.routers.features import router as features_router
 from app.api.routers.findings import router as findings_router
 from app.api.routers.upload import router as upload_router
 from app.api.routers.roadmap import router as roadmap_router
 
+# ─── Rate Limiting ────────────────────────────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
+
 app = FastAPI(title="Jira Delivery Health API", version="0.1.0")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS origins — set CORS_ORIGINS env var as comma-separated list for production
 # e.g. CORS_ORIGINS="https://dashboard.example.com,http://localhost:3000"
@@ -19,7 +27,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
     allow_methods=["GET", "POST"],   # POST needed for /api/upload
-    allow_headers=["*"],
+    allow_headers=["Content-Type", "Authorization", "X-Upload-Key"],  # Security: restrict to specific headers
 )
 
 app.include_router(pis_router)
