@@ -5,8 +5,9 @@
 //   - Azure Container Registry (Basic SKU)
 //   - Azure Container Apps Environment (Consumption plan)
 //   - Container App: backend (FastAPI)
-//   - Container App: frontend (Next.js)
+//   - Container App: frontend (Next.js) with Entra ID authentication
 //   - Azure Database for PostgreSQL Flexible Server (Burstable B1ms)
+//   - Managed Identity for ACR access
 //
 // Usage:
 //   az deployment group create \
@@ -49,6 +50,12 @@ param imageTag string = 'latest'
 @description('Use a public placeholder image (set true on first deploy before images exist in ACR)')
 param useDefaultImage bool = false
 
+@description('Azure AD (Entra ID) client ID for frontend authentication')
+param entraClientId string = ''
+
+@description('Azure AD (Entra ID) tenant ID for frontend authentication')
+param entraTenantId string = ''
+
 @description('Backend minimum replicas (0 for scale-to-zero)')
 @minValue(0)
 @maxValue(5)
@@ -80,6 +87,7 @@ var containerEnvName = '${resourcePrefix}-env'
 var backendAppName = '${resourcePrefix}-backend'
 var frontendAppName = '${resourcePrefix}-frontend'
 var logAnalyticsName = '${resourcePrefix}-logs'
+var managedIdentityName = '${resourcePrefix}-identity'
 
 // Container images — use placeholder on first deploy before ACR has images
 var backendImage = useDefaultImage ? 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest' : '${acr.properties.loginServer}/pi-dashboard-backend:${imageTag}'
@@ -91,6 +99,9 @@ var effectiveCorsOrigins = corsOrigins != '' ? '${corsOrigins},${defaultCorsOrig
 
 // Database connection string for SQLAlchemy
 var dbConnectionString = 'postgresql://${dbAdminLogin}:${dbAdminPassword}@${dbServer.properties.fullyQualifiedDomainName}:5432/${dbName}?sslmode=require'
+
+// Whether Entra ID auth is configured
+var entraAuthEnabled = entraClientId != '' && entraTenantId != ''
 
 // ─── Log Analytics Workspace ─────────────────────────────────────────────────
 
@@ -105,6 +116,13 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   }
 }
 
+// ─── Managed Identity (for ACR pull) ─────────────────────────────────────────
+
+resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: managedIdentityName
+  location: location
+}
+
 // ─── Container Registry ──────────────────────────────────────────────────────
 
 resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
@@ -114,7 +132,18 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
     name: 'Basic'
   }
   properties: {
-    adminUserEnabled: true
+    adminUserEnabled: false  // Security: use managed identity instead
+  }
+}
+
+// Assign AcrPull role to the managed identity
+resource acrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acr.id, managedIdentity.id, 'acrpull')
+  scope: acr
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d') // AcrPull
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 
@@ -187,6 +216,12 @@ resource containerEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
 resource backendApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: backendAppName
   location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${managedIdentity.id}': {}
+    }
+  }
   properties: {
     managedEnvironmentId: containerEnv.id
     configuration: {
@@ -200,15 +235,10 @@ resource backendApp 'Microsoft.App/containerApps@2024-03-01' = {
       registries: [
         {
           server: acr.properties.loginServer
-          username: acr.listCredentials().username
-          passwordSecretRef: 'acr-password'
+          identity: managedIdentity.id
         }
       ]
       secrets: [
-        {
-          name: 'acr-password'
-          value: acr.listCredentials().passwords[0].value
-        }
         {
           name: 'db-url'
           value: dbConnectionString
@@ -280,6 +310,9 @@ resource backendApp 'Microsoft.App/containerApps@2024-03-01' = {
       }
     }
   }
+  dependsOn: [
+    acrPullRoleAssignment
+  ]
 }
 
 // ─── Frontend Container App ──────────────────────────────────────────────────
@@ -287,6 +320,12 @@ resource backendApp 'Microsoft.App/containerApps@2024-03-01' = {
 resource frontendApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: frontendAppName
   location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${managedIdentity.id}': {}
+    }
+  }
   properties: {
     managedEnvironmentId: containerEnv.id
     configuration: {
@@ -295,25 +334,20 @@ resource frontendApp 'Microsoft.App/containerApps@2024-03-01' = {
         external: true  // Public-facing
         targetPort: 3000
         transport: 'http'
+        // Security: restrict CORS to the frontend's own domain only
         corsPolicy: {
-          allowedOrigins: ['*']
+          allowedOrigins: [defaultCorsOrigin]
           allowedMethods: ['GET', 'POST', 'OPTIONS']
-          allowedHeaders: ['*']
+          allowedHeaders: ['Content-Type', 'Authorization', 'X-Upload-Key']
         }
       }
       registries: [
         {
           server: acr.properties.loginServer
-          username: acr.listCredentials().username
-          passwordSecretRef: 'acr-password'
+          identity: managedIdentity.id
         }
       ]
-      secrets: [
-        {
-          name: 'acr-password'
-          value: acr.listCredentials().passwords[0].value
-        }
-      ]
+      secrets: []
     }
     template: {
       containers: [
@@ -368,6 +402,38 @@ resource frontendApp 'Microsoft.App/containerApps@2024-03-01' = {
       }
     }
   }
+  dependsOn: [
+    acrPullRoleAssignment
+  ]
+}
+
+// ─── Entra ID Authentication (EasyAuth) on Frontend ──────────────────────────
+
+resource frontendAuth 'Microsoft.App/containerApps/authConfigs@2024-03-01' = if (entraAuthEnabled) {
+  parent: frontendApp
+  name: 'current'
+  properties: {
+    platform: {
+      enabled: true
+    }
+    globalValidation: {
+      unauthenticatedClientAction: 'RedirectToLoginPage'
+    }
+    identityProviders: {
+      azureActiveDirectory: {
+        enabled: true
+        registration: {
+          clientId: entraClientId
+          openIdIssuer: 'https://login.microsoftonline.com/${entraTenantId}/v2.0'
+        }
+        validation: {
+          allowedAudiences: [
+            'api://${entraClientId}'
+          ]
+        }
+      }
+    }
+  }
 }
 
 // ─── Outputs ─────────────────────────────────────────────────────────────────
@@ -379,3 +445,5 @@ output backendInternalUrl string = 'https://${backendApp.properties.configuratio
 output dbServerFqdn string = dbServer.properties.fullyQualifiedDomainName
 output containerEnvName string = containerEnv.name
 output resourceGroupName string = resourceGroup().name
+output managedIdentityClientId string = managedIdentity.properties.clientId
+output authEnabled bool = entraAuthEnabled

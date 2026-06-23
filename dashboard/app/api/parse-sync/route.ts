@@ -1,10 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// ─── Authentication ──────────────────────────────────────────────────────────
+// This endpoint requires authentication. It checks (in order):
+// 1. Entra ID EasyAuth header (X-MS-CLIENT-PRINCIPAL) — set by Container Apps auth sidecar
+// 2. API key header (X-Upload-Key) — for non-browser clients (scripts, CI)
+// If neither is present, the request is rejected with 401.
+
+function isAuthenticated(req: NextRequest): boolean {
+  // Check 1: Entra ID auth (injected by Container Apps EasyAuth sidecar)
+  const clientPrincipal = req.headers.get("x-ms-client-principal");
+  if (clientPrincipal) {
+    return true;
+  }
+
+  // Check 2: API key fallback for non-browser clients
+  const apiKey = req.headers.get("x-upload-key");
+  const expectedKey = process.env.UPLOAD_API_KEY;
+  if (expectedKey && apiKey === expectedKey) {
+    return true;
+  }
+
+  return false;
+}
+
+// ─── Route Handler ───────────────────────────────────────────────────────────
+
 export async function POST(req: NextRequest) {
+  // Reject unauthenticated requests
+  if (!isAuthenticated(req)) {
+    return NextResponse.json(
+      { error: "Authentication required. Login via the dashboard or provide X-Upload-Key header." },
+      { status: 401 }
+    );
+  }
+
   const { text } = await req.json();
+
+  // Check if AI service is configured
+  const aiApiKey = process.env.ANTHROPIC_API_KEY || process.env.AZURE_OPENAI_API_KEY;
+  if (!aiApiKey) {
+    return NextResponse.json(
+      { error: "AI service not configured. Set ANTHROPIC_API_KEY or AZURE_OPENAI_API_KEY." },
+      { status: 503 }
+    );
+  }
+
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-       headers: {
+    headers: {
       "Content-Type": "application/json",
       "x-api-key": process.env.ANTHROPIC_API_KEY ?? "",
       "anthropic-version": "2023-06-01",
