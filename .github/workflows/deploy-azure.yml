@@ -2,7 +2,7 @@
 # GitHub Actions: Build & Deploy to Azure Container Apps
 #
 # Triggers on push to main (or manual dispatch).
-# Builds Docker images, pushes to ACR, deploys Container Apps.
+# Deploys infrastructure first (including ACR), then builds and pushes images.
 #
 # Secrets needed (set in repo Settings → Secrets → Actions):
 #   AZURE_CREDENTIALS       — Service principal JSON:
@@ -43,71 +43,50 @@ env:
   IMAGE_TAG: ${{ github.event.inputs.image_tag || github.sha }}
 
 jobs:
-  # ─── Build & Push Docker Images ───────────────────────────────────────────
-  build:
+  deploy:
     runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ env.IMAGE_TAG }}
-      acr_login_server: ${{ steps.get-acr.outputs.login_server }}
+    environment: ${{ github.event.inputs.environment || 'uat' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Debug - Check AZURE_CREDENTIALS secret
-        env:
-          AZURE_CREDS: ${{ secrets.AZURE_CREDENTIALS }}
-        run: |
-          if [ -z "$AZURE_CREDS" ]; then
-            echo "::error::AZURE_CREDENTIALS secret is EMPTY or not set"
-            exit 1
-          fi
-          echo "Secret length: ${#AZURE_CREDS} characters"
-          echo "First char: ${AZURE_CREDS:0:1}"
-          echo "Last char: ${AZURE_CREDS: -1}"
-          # Check if it looks like valid JSON
-          if echo "$AZURE_CREDS" | python3 -c "import sys,json; d=json.load(sys.stdin); print('Keys found:', list(d.keys())); assert 'clientId' in d, 'missing clientId'; assert 'clientSecret' in d, 'missing clientSecret'; assert 'tenantId' in d, 'missing tenantId'; assert 'subscriptionId' in d, 'missing subscriptionId'; print('All required keys present'); print('clientId length:', len(d['clientId'])); print('clientSecret length:', len(d['clientSecret'])); print('tenantId length:', len(d['tenantId'])); print('subscriptionId length:', len(d['subscriptionId']))"; then
-            echo "✓ AZURE_CREDENTIALS JSON is valid"
-          else
-            echo "::error::AZURE_CREDENTIALS is not valid JSON or missing required keys"
-            exit 1
-          fi
-
-      - name: Debug - Test az login directly
-        env:
-          AZURE_CREDS: ${{ secrets.AZURE_CREDENTIALS }}
-        run: |
-          CLIENT_ID=$(echo "$AZURE_CREDS" | python3 -c "import sys,json; print(json.load(sys.stdin)['clientId'])")
-          CLIENT_SECRET=$(echo "$AZURE_CREDS" | python3 -c "import sys,json; print(json.load(sys.stdin)['clientSecret'])")
-          TENANT_ID=$(echo "$AZURE_CREDS" | python3 -c "import sys,json; print(json.load(sys.stdin)['tenantId'])")
-          SUB_ID=$(echo "$AZURE_CREDS" | python3 -c "import sys,json; print(json.load(sys.stdin)['subscriptionId'])")
-          
-          echo "Attempting az login with client-id length ${#CLIENT_ID}, secret length ${#CLIENT_SECRET}, tenant length ${#TENANT_ID}"
-          az login --service-principal \
-            --username "$CLIENT_ID" \
-            --password "$CLIENT_SECRET" \
-            --tenant "$TENANT_ID" \
-            --output none 2>&1 || echo "::error::az login failed - see output above"
-          
-          echo "Setting subscription..."
-          az account set --subscription "$SUB_ID" 2>&1 || echo "::error::az account set failed"
-          az account show 2>&1 || true
 
       - name: Login to Azure
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      # ─── Step 1: Deploy Infrastructure (creates ACR, DB, Container Apps) ──
+      - name: Ensure resource group exists
+        run: |
+          az group create \
+            --name ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
+            --location ${{ vars.AZURE_LOCATION || 'uksouth' }} \
+            --tags Project=${{ env.PROJECT_NAME }} Environment=${{ env.ENVIRONMENT_NAME }}
+
+      - name: Deploy Bicep template
+        run: |
+          az deployment group create \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
+            --template-file infra/azure/main.bicep \
+            --parameters \
+              environmentName=${{ env.ENVIRONMENT_NAME }} \
+              projectName=${{ env.PROJECT_NAME }} \
+              imageTag=${{ env.IMAGE_TAG }} \
+              dbAdminPassword='${{ secrets.DB_ADMIN_PASSWORD }}' \
+              uploadApiKey='${{ secrets.UPLOAD_API_KEY }}' \
+              anthropicApiKey='${{ secrets.ANTHROPIC_API_KEY }}' \
+            --query "properties.outputs" \
+            --output table
+
+      # ─── Step 2: Build & Push Docker Images ────────────────────────────────
       - name: Get ACR login server
         id: get-acr
         run: |
           ACR_NAME=$(echo "${{ env.PROJECT_NAME }}${{ env.ENVIRONMENT_NAME }}acr" | tr -d '-')
-          LOGIN_SERVER=$(az acr show --name "$ACR_NAME" --query loginServer -o tsv 2>/dev/null || echo "")
-          if [ -z "$LOGIN_SERVER" ]; then
-            echo "ACR not found. Run infrastructure deployment first."
-            exit 1
-          fi
+          LOGIN_SERVER=$(az acr show --name "$ACR_NAME" --query loginServer -o tsv)
           echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
           echo "acr_name=$ACR_NAME" >> "$GITHUB_OUTPUT"
+          echo "ACR: $LOGIN_SERVER"
 
       - name: Login to ACR
         run: |
@@ -133,69 +112,48 @@ jobs:
           docker push ${{ steps.get-acr.outputs.login_server }}/pi-dashboard-frontend:${{ env.IMAGE_TAG }}
           docker push ${{ steps.get-acr.outputs.login_server }}/pi-dashboard-frontend:latest
 
-  # ─── Deploy Infrastructure & Apps ────────────────────────────────────────
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    environment: ${{ github.event.inputs.environment || 'uat' }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Ensure resource group exists
+      # ─── Step 3: Update Container Apps with new images ─────────────────────
+      - name: Update backend container app
         run: |
-          az group create \
-            --name ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
-            --location ${{ vars.AZURE_LOCATION || 'uksouth' }} \
-            --tags Project=${{ env.PROJECT_NAME }} Environment=${{ env.ENVIRONMENT_NAME }}
-
-      - name: Deploy Bicep template
-        run: |
-          az deployment group create \
+          az containerapp update \
             --resource-group ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
-            --template-file infra/azure/main.bicep \
-            --parameters \
-              environmentName=${{ env.ENVIRONMENT_NAME }} \
-              projectName=${{ env.PROJECT_NAME }} \
-              imageTag=${{ needs.build.outputs.image_tag }} \
-              dbAdminPassword='${{ secrets.DB_ADMIN_PASSWORD }}' \
-              uploadApiKey='${{ secrets.UPLOAD_API_KEY }}' \
-              anthropicApiKey='${{ secrets.ANTHROPIC_API_KEY }}' \
-            --query "properties.outputs" \
-            --output table
+            --name ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT_NAME }}-backend \
+            --image ${{ steps.get-acr.outputs.login_server }}/pi-dashboard-backend:${{ env.IMAGE_TAG }} \
+            --output none
 
+      - name: Update frontend container app
+        run: |
+          az containerapp update \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
+            --name ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT_NAME }}-frontend \
+            --image ${{ steps.get-acr.outputs.login_server }}/pi-dashboard-frontend:${{ env.IMAGE_TAG }} \
+            --output none
+
+      # ─── Step 4: Run database migrations ───────────────────────────────────
       - name: Run database migrations
         run: |
-          RESOURCE_GROUP="${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }}"
-          BACKEND_APP="${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT_NAME }}-backend"
-
-          # Execute migration via container app exec
           az containerapp exec \
-            --resource-group "$RESOURCE_GROUP" \
-            --name "$BACKEND_APP" \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
+            --name ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT_NAME }}-backend \
             --command "python -m app.models" \
             || echo "Migration may have already been applied or app is still starting"
 
+      # ─── Step 5: Output deployment URLs ────────────────────────────────────
       - name: Get deployment URLs
-        id: urls
         run: |
-          RESOURCE_GROUP="${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }}"
-          FRONTEND_APP="${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT_NAME }}-frontend"
-
-          FRONTEND_URL=$(az containerapp show \
-            --resource-group "$RESOURCE_GROUP" \
-            --name "$FRONTEND_APP" \
+          FRONTEND_FQDN=$(az containerapp show \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
+            --name ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT_NAME }}-frontend \
             --query "properties.configuration.ingress.fqdn" -o tsv)
 
           echo "## Deployment Complete :rocket:" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Resource | URL |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|----------|-----|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Frontend | https://$FRONTEND_URL |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Image Tag | \`${{ needs.build.outputs.image_tag }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Resource | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|----------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Frontend | https://$FRONTEND_FQDN |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Image Tag | \`${{ env.IMAGE_TAG }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Environment | ${{ env.ENVIRONMENT_NAME }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo ""
+          echo "═══════════════════════════════════════════════"
+          echo "  Frontend URL: https://$FRONTEND_FQDN"
+          echo "═══════════════════════════════════════════════"
