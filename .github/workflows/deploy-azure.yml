@@ -50,6 +50,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set lowercase environment name
+        run: |
+          echo "ENV_NAME_LOWER=$(echo '${{ env.ENVIRONMENT_NAME }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -81,7 +85,7 @@ jobs:
       - name: Get ACR login server
         id: get-acr
         run: |
-          ACR_NAME=$(echo "${{ env.PROJECT_NAME }}${{ env.ENVIRONMENT_NAME }}acr" | tr -d '-')
+          ACR_NAME=$(echo "${{ env.PROJECT_NAME }}${{ env.ENV_NAME_LOWER }}acr" | tr -d '-')
           LOGIN_SERVER=$(az acr show --name "$ACR_NAME" --query loginServer -o tsv)
           echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
           echo "acr_name=$ACR_NAME" >> "$GITHUB_OUTPUT"
@@ -116,7 +120,7 @@ jobs:
         run: |
           az containerapp update \
             --resource-group ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
-            --name ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT_NAME }}-backend \
+            --name ${{ env.PROJECT_NAME }}-${{ env.ENV_NAME_LOWER }}-backend \
             --image ${{ steps.get-acr.outputs.login_server }}/pi-dashboard-backend:${{ env.IMAGE_TAG }} \
             --output none
 
@@ -124,7 +128,7 @@ jobs:
         run: |
           az containerapp update \
             --resource-group ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
-            --name ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT_NAME }}-frontend \
+            --name ${{ env.PROJECT_NAME }}-${{ env.ENV_NAME_LOWER }}-frontend \
             --image ${{ steps.get-acr.outputs.login_server }}/pi-dashboard-frontend:${{ env.IMAGE_TAG }} \
             --output none
 
@@ -133,7 +137,7 @@ jobs:
         run: |
           az containerapp exec \
             --resource-group ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
-            --name ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT_NAME }}-backend \
+            --name ${{ env.PROJECT_NAME }}-${{ env.ENV_NAME_LOWER }}-backend \
             --command "python -m app.models" \
             || echo "Migration may have already been applied or app is still starting"
 
@@ -142,7 +146,7 @@ jobs:
         run: |
           FRONTEND_FQDN=$(az containerapp show \
             --resource-group ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
-            --name ${{ env.PROJECT_NAME }}-${{ env.ENVIRONMENT_NAME }}-frontend \
+            --name ${{ env.PROJECT_NAME }}-${{ env.ENV_NAME_LOWER }}-frontend \
             --query "properties.configuration.ingress.fqdn" -o tsv)
 
           echo "## Deployment Complete :rocket:" >> "$GITHUB_STEP_SUMMARY"
