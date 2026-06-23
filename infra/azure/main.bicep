@@ -72,8 +72,9 @@ param frontendMaxReplicas int = 3
 
 // ─── Variables ───────────────────────────────────────────────────────────────
 
-var resourcePrefix = '${projectName}-${environmentName}'
-var acrName = replace('${projectName}${environmentName}acr', '-', '')
+var envNameLower = toLower(environmentName)
+var resourcePrefix = '${projectName}-${envNameLower}'
+var acrName = replace('${projectName}${envNameLower}acr', '-', '')
 var dbServerName = '${resourcePrefix}-db'
 var dbName = 'pidashboard'
 var containerEnvName = '${resourcePrefix}-env'
