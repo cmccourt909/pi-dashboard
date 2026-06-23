@@ -49,9 +49,18 @@ export interface Finding {
 }
 
 async function fetchJSON(path: string) {
-  const res = await fetch(API_BASE + path, { cache: "no-store" });
-  if (!res.ok) throw new Error("API error " + res.status);
-  return res.json();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+  try {
+    const res = await fetch(API_BASE + path, {
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error("API error " + res.status);
+    return res.json();
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export const api = {
