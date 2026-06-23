@@ -69,18 +69,21 @@ router = APIRouter(prefix="/api/upload", tags=["upload"])
 # Authentication — require UPLOAD_API_KEY header for upload endpoint
 # ---------------------------------------------------------------------------
 
+import hmac
+
+
 UPLOAD_API_KEY = os.environ.get("UPLOAD_API_KEY", "")
 
 
 def verify_upload_key(x_upload_key: Optional[str] = Header(None)):
-    """Require a valid API key for upload operations."""
+    """Require a valid API key for upload operations. Uses timing-safe comparison."""
     if not UPLOAD_API_KEY:
         # If no key is configured, reject all requests to prevent open access
         raise HTTPException(
             status_code=403,
             detail="Upload API key not configured on server. Set UPLOAD_API_KEY env var.",
         )
-    if x_upload_key != UPLOAD_API_KEY:
+    if not x_upload_key or not hmac.compare_digest(x_upload_key, UPLOAD_API_KEY):
         raise HTTPException(status_code=401, detail="Invalid or missing X-Upload-Key header.")
 
 
