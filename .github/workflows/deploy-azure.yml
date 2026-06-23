@@ -53,6 +53,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Debug - Check AZURE_CREDENTIALS secret
+        run: |
+          CREDS='${{ secrets.AZURE_CREDENTIALS }}'
+          if [ -z "$CREDS" ]; then
+            echo "::error::AZURE_CREDENTIALS secret is EMPTY or not set"
+            exit 1
+          fi
+          echo "Secret length: ${#CREDS} characters"
+          echo "First char: ${CREDS:0:1}"
+          echo "Last char: ${CREDS: -1}"
+          # Check if it looks like valid JSON
+          if echo "$CREDS" | python3 -c "import sys,json; d=json.load(sys.stdin); print('Keys found:', list(d.keys())); assert 'clientId' in d, 'missing clientId'; assert 'clientSecret' in d, 'missing clientSecret'; assert 'tenantId' in d, 'missing tenantId'; assert 'subscriptionId' in d, 'missing subscriptionId'; print('All required keys present'); print('clientId length:', len(d['clientId'])); print('clientSecret length:', len(d['clientSecret'])); print('tenantId length:', len(d['tenantId'])); print('subscriptionId length:', len(d['subscriptionId']))"; then
+            echo "✓ AZURE_CREDENTIALS JSON is valid"
+          else
+            echo "::error::AZURE_CREDENTIALS is not valid JSON or missing required keys"
+            echo "Raw first 20 chars (redacted middle): ${CREDS:0:2}...${CREDS: -2}"
+            exit 1
+          fi
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
