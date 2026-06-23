@@ -50,6 +50,9 @@ param anthropicApiKey string = ''
 @description('Container image tag (defaults to latest)')
 param imageTag string = 'latest'
 
+@description('Use a public placeholder image (set true on first deploy before images exist in ACR)')
+param useDefaultImage bool = false
+
 @description('Backend minimum replicas (0 for scale-to-zero)')
 @minValue(0)
 @maxValue(5)
@@ -81,6 +84,10 @@ var containerEnvName = '${resourcePrefix}-env'
 var backendAppName = '${resourcePrefix}-backend'
 var frontendAppName = '${resourcePrefix}-frontend'
 var logAnalyticsName = '${resourcePrefix}-logs'
+
+// Container images — use placeholder on first deploy before ACR has images
+var backendImage = useDefaultImage ? 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest' : '${acr.properties.loginServer}/pi-dashboard-backend:${imageTag}'
+var frontendImage = useDefaultImage ? 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest' : '${acr.properties.loginServer}/pi-dashboard-frontend:${imageTag}'
 
 // Construct the CORS origins — include the frontend app URL
 var defaultCorsOrigin = 'https://${frontendAppName}.${containerEnv.properties.defaultDomain}'
@@ -220,7 +227,7 @@ resource backendApp 'Microsoft.App/containerApps@2024-03-01' = {
       containers: [
         {
           name: 'backend'
-          image: '${acr.properties.loginServer}/pi-dashboard-backend:${imageTag}'
+          image: backendImage
           resources: {
             cpu: json('0.5')
             memory: '1Gi'
@@ -320,7 +327,7 @@ resource frontendApp 'Microsoft.App/containerApps@2024-03-01' = {
       containers: [
         {
           name: 'frontend'
-          image: '${acr.properties.loginServer}/pi-dashboard-frontend:${imageTag}'
+          image: frontendImage
           resources: {
             cpu: json('0.5')
             memory: '1Gi'
