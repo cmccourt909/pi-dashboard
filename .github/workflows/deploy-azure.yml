@@ -55,40 +55,10 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # ─── Step 0: Create/Get Entra ID App Registration for Auth ────────────
+      # ─── Step 0: Set environment variables ────────────────────────────────
       - name: Set lowercase environment name
         run: |
           echo "ENV_NAME_LOWER=$(echo '${{ env.ENVIRONMENT_NAME }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
-
-      - name: Setup Entra ID App Registration
-        id: entra-app
-        run: |
-          APP_NAME="${{ env.PROJECT_NAME }}-${{ env.ENV_NAME_LOWER }}-auth"
-          TENANT_ID=$(az account show --query tenantId -o tsv)
-
-          # Check if app already exists
-          EXISTING_APP_ID=$(az ad app list --display-name "$APP_NAME" --query "[0].appId" -o tsv 2>/dev/null || echo "")
-
-          if [ -n "$EXISTING_APP_ID" ] && [ "$EXISTING_APP_ID" != "None" ]; then
-            echo "Entra ID app already exists: $EXISTING_APP_ID"
-            CLIENT_ID="$EXISTING_APP_ID"
-          else
-            echo "Creating Entra ID app registration: $APP_NAME"
-            CLIENT_ID=$(az ad app create \
-              --display-name "$APP_NAME" \
-              --sign-in-audience AzureADMyOrg \
-              --query appId -o tsv)
-            echo "Created app: $CLIENT_ID"
-          fi
-
-          # Get the frontend FQDN (may not exist yet on first deploy)
-          FRONTEND_FQDN="${{ env.PROJECT_NAME }}-${{ env.ENV_NAME_LOWER }}-frontend"
-          # We'll update the redirect URI after the container app is created
-
-          echo "client_id=$CLIENT_ID" >> "$GITHUB_OUTPUT"
-          echo "tenant_id=$TENANT_ID" >> "$GITHUB_OUTPUT"
-          echo "Entra App Client ID: $CLIENT_ID"
-          echo "Tenant ID: $TENANT_ID"
 
       # ─── Step 1: Deploy Infrastructure (creates ACR, DB, Container Apps) ──
       - name: Ensure resource group exists
@@ -109,8 +79,8 @@ jobs:
               useDefaultImage=true \
               dbAdminPassword='${{ secrets.DB_ADMIN_PASSWORD }}' \
               uploadApiKey='${{ secrets.UPLOAD_API_KEY }}' \
-              entraClientId='${{ steps.entra-app.outputs.client_id }}' \
-              entraTenantId='${{ steps.entra-app.outputs.tenant_id }}' \
+              entraClientId='${{ vars.ENTRA_CLIENT_ID }}' \
+              entraTenantId='${{ vars.ENTRA_TENANT_ID }}' \
             --query "properties.outputs" \
             --output table
 
