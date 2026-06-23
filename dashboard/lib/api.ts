@@ -36,16 +36,13 @@ export interface PIData {
 }
 
 export interface Finding {
-  id: string;
+  rule_id: string;
   severity: "critical" | "warning" | "info";
   category: string;
   title: string;
-  description: string;
-  affected_entity: string;
-  entity_type: string;
+  detail: string;
   recommendation: string;
-  metric_value: number | null;
-  metric_threshold: number | null;
+  issue_keys: string[];
 }
 
 async function fetchJSON(path: string) {

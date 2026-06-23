@@ -213,6 +213,8 @@ class Issue(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     due_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    target_start_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    target_end_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     last_ingested_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
