@@ -144,26 +144,7 @@ jobs:
             --command "python -m app.models" \
             || echo "Migration may have already been applied or app is still starting"
 
-      # ─── Step 5: Configure Entra ID redirect URI ──────────────────────────
-      - name: Configure Entra ID redirect URI
-        run: |
-          FRONTEND_FQDN=$(az containerapp show \
-            --resource-group ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
-            --name ${{ env.PROJECT_NAME }}-${{ env.ENV_NAME_LOWER }}-frontend \
-            --query "properties.configuration.ingress.fqdn" -o tsv)
-
-          CLIENT_ID="${{ steps.entra-app.outputs.client_id }}"
-          REDIRECT_URI="https://${FRONTEND_FQDN}/.auth/login/aad/callback"
-
-          echo "Setting redirect URI: $REDIRECT_URI"
-
-          # Update the app registration with the correct redirect URI
-          az ad app update \
-            --id "$CLIENT_ID" \
-            --web-redirect-uris "$REDIRECT_URI" \
-            || echo "Warning: Could not set redirect URI. You may need Application.ReadWrite.All permission."
-
-      # ─── Step 6: Output deployment URLs ────────────────────────────────────
+      # ─── Step 5: Output deployment URLs ────────────────────────────────────
       - name: Get deployment URLs
         run: |
           FRONTEND_FQDN=$(az containerapp show \
@@ -176,11 +157,10 @@ jobs:
           echo "| Resource | Value |" >> "$GITHUB_STEP_SUMMARY"
           echo "|----------|-------|" >> "$GITHUB_STEP_SUMMARY"
           echo "| Frontend | https://$FRONTEND_FQDN |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Auth | Entra ID (Client: ${{ steps.entra-app.outputs.client_id }}) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Auth | Entra ID (${{ vars.ENTRA_CLIENT_ID }}) |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Image Tag | \`${{ env.IMAGE_TAG }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Environment | ${{ env.ENVIRONMENT_NAME }} |" >> "$GITHUB_STEP_SUMMARY"
           echo ""
           echo "═══════════════════════════════════════════════"
           echo "  Frontend URL: https://$FRONTEND_FQDN"
-          echo "  Auth: Entra ID enabled"
           echo "═══════════════════════════════════════════════"
