@@ -1,17 +1,23 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # GitHub Actions: Deploy to EC2 on push to main
 #
+# DISABLED — Migrated to Azure Container Apps (see deploy-azure.yml)
+#
+# To re-enable, change the 'on' trigger back to:
+#   on:
+#     push:
+#       branches: [main]
+#     workflow_dispatch:
+#
 # Secrets needed (set in repo Settings → Secrets → Actions):
 #   EC2_HOST        — Elastic IP of your server
 #   EC2_SSH_KEY     — Private SSH key (contents of ~/.ssh/id_ed25519)
 # ─────────────────────────────────────────────────────────────────────────────
 
-name: Deploy to AWS
+name: Deploy to AWS (disabled)
 
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:  # Manual trigger only — no longer runs on push to main
 
 jobs:
   deploy:
