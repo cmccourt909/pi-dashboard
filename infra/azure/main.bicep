@@ -319,7 +319,7 @@ resource frontendApp 'Microsoft.App/containerApps@2024-03-01' = {
         }
         {
           name: 'anthropic-api-key'
-          value: anthropicApiKey
+          value: anthropicApiKey != '' ? anthropicApiKey : 'not-configured'
         }
       ]
     }
