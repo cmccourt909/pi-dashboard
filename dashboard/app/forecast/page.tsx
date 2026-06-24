@@ -106,7 +106,7 @@ export default function ForecastPage() {
       {/* Header */}
       <div style={{ background: "#1a2b3c", padding: "16px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
         <div>
-          <div style={{ fontSize: 11, color: "#7fb3d3", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>Cigna Commercial · ISAAC to IO Migration</div>
+          <div style={{ fontSize: 11, color: "#7fb3d3", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>Delivery intelligence</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: "#fff" }}>📈 Forecast &amp; Predictive Analytics</div>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>

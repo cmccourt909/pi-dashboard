@@ -84,7 +84,7 @@ export function healthColor(f: Feature): string {
   return "var(--blue)";
 }
 
-const COMMON_PREFIX = /^P-\d+:\s*Cigna Commercial Migration \(ISAAC to IO\)\s*[-–]\s*/i;
+const COMMON_PREFIX = /^P-\d+:\s*.*Migration\s*\(.*\)\s*[-–]\s*/i;
 export function cleanSummary(summary: string): string {
   return summary.replace(COMMON_PREFIX, "").trim();
 }
@@ -129,8 +129,8 @@ export function mockData(): RoadmapData {
     ],
     sprints: [],
     features: [
-      { key: "EVLGCN-101", summary: "ISAAC Policy Migration", status: "In Progress", progress: 85, planned_start: d(-60), planned_end: d(10), assignee: "Sarah M.", stories: [] },
-      { key: "EVLGCN-102", summary: "Image One API Integration", status: "In Progress", progress: 62, planned_start: d(-45), planned_end: d(20), assignee: "James T.", stories: [] },
+      { key: "EVLGCN-101", summary: "Policy Engine Migration", status: "In Progress", progress: 85, planned_start: d(-60), planned_end: d(10), assignee: "Sarah M.", stories: [] },
+      { key: "EVLGCN-102", summary: "API Integration Layer", status: "In Progress", progress: 62, planned_start: d(-45), planned_end: d(20), assignee: "James T.", stories: [] },
     ],
   };
 }

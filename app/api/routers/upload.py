@@ -3,7 +3,7 @@ Upload router — accepts Jira export files and ingests them into the database.
 
 Supported file types:
   - Stories CSV  (e.g. "Stories under Features_Epic_*.csv")
-  - Features XLSX (e.g. "Isaac to IO Cigna Features *.xlsx")
+  - Features XLSX (e.g. "Features *.xlsx")
 
 They join on Feature Issue Key (e.g. EVEXPCP-164).
 
@@ -670,7 +670,7 @@ def _detect_file_type(filename: str, df: pd.DataFrame) -> str:
         return "roadmap_xlsx"
     if "stories" in name_lower or COL_STORY_POINTS in cols:
         return "stories_csv"
-    if "features" in name_lower or "isaac" in name_lower:
+    if "features" in name_lower:
         return "features_xlsx"
     if COL_FEATURE_LINK in cols:
         return "stories_csv"

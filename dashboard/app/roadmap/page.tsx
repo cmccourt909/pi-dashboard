@@ -272,7 +272,7 @@ export default function RoadmapPage() {
         <div className="page-header">
           <div>
             <div className="page-title">📅 Roadmap</div>
-            <div className="page-subtitle">Cigna Commercial — ISAAC to Image One Migration</div>
+            <div className="page-subtitle">Feature roadmap timeline</div>
           </div>
           <div className="export-group">
             <button className="btn" onClick={() => handleExport("png")} disabled={exporting}>

@@ -480,7 +480,7 @@ const CSS = `
 const MOCK_RESPONSE = {
   meta: {
     date: "April 29, 2026",
-    program: "Isaac to Image One – Cigna Commercial",
+    program: "Enterprise Platform Delivery",
     meetingType: "Delivery Sync",
   },
   health: {
@@ -531,19 +531,19 @@ const MOCK_RESPONSE = {
       category: "Data",
     },
     {
-      task: "Coordinate CPT and modality mappings between Isaac and Image One",
+      task: "Coordinate data mappings between legacy and target systems",
       owner: "Deepali / Kevin / Praneet",
       dueDate: "ASAP",
       category: "Data",
     },
     {
-      task: "Identify E2E test case reviewers ahead of Cigna walkthrough",
+      task: "Identify E2E test case reviewers ahead of client walkthrough",
       owner: "Chris McCourt",
-      dueDate: "Before Cigna review",
+      dueDate: "Before client review",
       category: "Testing",
     },
     {
-      task: "Update Isaac decommission scope",
+      task: "Update legacy system decommission scope",
       owner: "Neil / Team",
       dueDate: "May 18",
       category: "Infrastructure",

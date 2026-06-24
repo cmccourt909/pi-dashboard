@@ -261,7 +261,7 @@ class FeatureMembership(Base):
 # ---------- bootstrap ----------
 
 def get_engine():
-    url = os.environ.get("DB_URL", "sqlite:///app.db")
+    url = os.environ.get("DATABASE_URL", "sqlite:////tmp/app.db")
     return create_engine(url, echo=False, future=True)
 
 
