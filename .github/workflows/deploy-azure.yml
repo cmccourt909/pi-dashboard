@@ -81,6 +81,7 @@ jobs:
               uploadApiKey='${{ secrets.UPLOAD_API_KEY }}' \
               entraClientId='${{ vars.ENTRA_CLIENT_ID2 }}' \
               entraTenantId='${{ vars.ENTRA_TENANT_ID }}' \
+              corsOrigins='https://runwaypoint.app' \
             --query "properties.outputs" \
             --output table
 
