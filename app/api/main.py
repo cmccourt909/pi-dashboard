@@ -48,14 +48,20 @@ def seed_demo(request: Request):
     upload_key = os.environ.get("UPLOAD_API_KEY", "")
     provided_key = request.headers.get("x-upload-key", "")
     if not upload_key:
-        # Allow seeding if no key configured (dev mode)
         pass
     elif not provided_key or not hmac.compare_digest(provided_key, upload_key):
         from fastapi import HTTPException
         raise HTTPException(status_code=401, detail="Invalid or missing X-Upload-Key header.")
 
-    from app.seed_demo import seed
-    from app.engine import invalidate_cache
-    seed()
-    invalidate_cache()
-    return {"status": "ok", "message": "Demo data seeded successfully"}
+    try:
+        from app.seed_demo import seed
+        from app.engine import invalidate_cache
+        seed()
+        invalidate_cache()
+        return {"status": "ok", "message": "Demo data seeded successfully"}
+    except Exception as e:
+        return Response(
+            content=f'{{"status": "error", "detail": "{type(e).__name__}: {str(e)}"}}',
+            status_code=500,
+            media_type="application/json",
+        )

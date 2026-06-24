@@ -84,6 +84,9 @@ def _random_summary(feature_summary: str, idx: int) -> str:
 
 def seed():
     engine = get_engine()
+    # Ensure roadmap date columns exist (migration)
+    from app.migrations.add_roadmap_dates import run as run_migration
+    run_migration()
     # Create tables if they don't exist
     Base.metadata.create_all(engine)
 
