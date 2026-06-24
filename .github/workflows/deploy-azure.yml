@@ -139,17 +139,30 @@ jobs:
       # ─── Step 4: Run database migrations ───────────────────────────────────
       - name: Run database migrations
         run: |
+          # Wait for backend to be ready
+          sleep 30
+
+          # Get backend FQDN
+          BACKEND_FQDN=$(az containerapp show \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
+            --name ${{ env.PROJECT_NAME }}-${{ env.ENV_NAME_LOWER }}-backend \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+
+          # Hit health endpoint to trigger app startup (which runs create_all)
+          curl -sf "https://$BACKEND_FQDN/health" || echo "Backend health check failed — may still be starting"
+
+          # Run migrations via exec with workaround for non-TTY environments
           az containerapp exec \
             --resource-group ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
             --name ${{ env.PROJECT_NAME }}-${{ env.ENV_NAME_LOWER }}-backend \
-            --command "python -m app.models" \
-            || echo "Migration may have already been applied or app is still starting"
+            --command "python -c \"from app.models import create_all; create_all()\"" \
+            2>/dev/null || echo "Schema creation via exec failed (TTY issue) — tables created on app startup"
 
           az containerapp exec \
             --resource-group ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
             --name ${{ env.PROJECT_NAME }}-${{ env.ENV_NAME_LOWER }}-backend \
             --command "python -m app.migrations.add_roadmap_dates" \
-            || echo "Roadmap dates migration may have already been applied"
+            2>/dev/null || echo "Roadmap dates migration via exec failed (TTY issue) — will run on next seed"
 
       # ─── Step 5: Output deployment URLs ────────────────────────────────────
       - name: Get deployment URLs

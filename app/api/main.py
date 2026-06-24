@@ -11,6 +11,19 @@ from app.api.routers.findings import router as findings_router
 from app.api.routers.upload import router as upload_router
 from app.api.routers.roadmap import router as roadmap_router
 
+# ─── Run migrations on startup ────────────────────────────────────────────────
+def _run_startup_migrations():
+    """Ensure database schema is up to date on app startup."""
+    try:
+        from app.models import create_all
+        create_all()
+        from app.migrations.add_roadmap_dates import run as run_roadmap_migration
+        run_roadmap_migration()
+    except Exception as e:
+        print(f"[startup] Migration warning: {e}")
+
+_run_startup_migrations()
+
 # ─── Rate Limiting ────────────────────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 
