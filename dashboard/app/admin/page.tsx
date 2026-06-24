@@ -54,7 +54,26 @@ export default function AdminPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [history, setHistory] = useState<UploadResult[]>([]);
   const [uploadKey, setUploadKey] = useState("");
+  const [seedState, setSeedState] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [seedMsg, setSeedMsg] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const seedDemo = useCallback(async () => {
+    setSeedState("loading");
+    setSeedMsg("");
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (uploadKey) headers["X-Upload-Key"] = uploadKey;
+      const res = await fetch(`${API_BASE}/api/seed-demo`, { method: "POST", headers });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.detail ?? `HTTP ${res.status}`);
+      setSeedState("done");
+      setSeedMsg(json.message || "Demo data loaded!");
+    } catch (err: unknown) {
+      setSeedState("error");
+      setSeedMsg(err instanceof Error ? err.message : String(err));
+    }
+  }, [uploadKey]);
 
   const upload = useCallback(async (file: File) => {
     setState("uploading");
@@ -424,6 +443,43 @@ export default function AdminPage() {
             <span>{tip}</span>
           </div>
         ))}
+      </div>
+
+      {/* ── seed demo data ── */}
+      <div style={{ marginTop: 32, padding: "16px 20px", background: "var(--bg-panel)", border: "1px solid var(--border)", borderRadius: 4 }}>
+        <div className="label" style={{ marginBottom: 10 }}>Demo Data</div>
+        <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 12 }}>
+          Load anonymized demo data (PI 26.2 &amp; 26.3) with 3 teams, 6 features, ~100 stories, and realistic risk findings.
+          This replaces all existing data.
+        </p>
+        <button
+          onClick={seedDemo}
+          disabled={seedState === "loading"}
+          style={{
+            padding: "8px 16px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: "0.05em",
+            border: "1px solid var(--accent)",
+            borderRadius: 4,
+            background: seedState === "loading" ? "var(--bg)" : "var(--accent-glow)",
+            color: "var(--accent)",
+            cursor: seedState === "loading" ? "wait" : "pointer",
+          }}
+        >
+          {seedState === "loading" ? "SEEDING…" : "LOAD DEMO DATA"}
+        </button>
+        {seedState === "done" && (
+          <span style={{ marginLeft: 12, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--status-healthy)" }}>
+            ✓ {seedMsg}
+          </span>
+        )}
+        {seedState === "error" && (
+          <span style={{ marginLeft: 12, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--status-critical)" }}>
+            ✗ {seedMsg}
+          </span>
+        )}
       </div>
     </div>
   );
