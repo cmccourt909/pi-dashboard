@@ -47,7 +47,7 @@ export interface Finding {
 
 async function fetchJSON(path: string) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+  const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
   try {
     const res = await fetch(API_BASE + path, {
       cache: "no-store",

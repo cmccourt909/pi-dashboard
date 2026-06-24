@@ -39,3 +39,23 @@ app.include_router(roadmap_router)
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.post("/api/seed-demo")
+def seed_demo(request: Request):
+    """Seed demo data. Protected by UPLOAD_API_KEY."""
+    import hmac
+    upload_key = os.environ.get("UPLOAD_API_KEY", "")
+    provided_key = request.headers.get("x-upload-key", "")
+    if not upload_key:
+        # Allow seeding if no key configured (dev mode)
+        pass
+    elif not provided_key or not hmac.compare_digest(provided_key, upload_key):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="Invalid or missing X-Upload-Key header.")
+
+    from app.seed_demo import seed
+    from app.engine import invalidate_cache
+    seed()
+    invalidate_cache()
+    return {"status": "ok", "message": "Demo data seeded successfully"}
