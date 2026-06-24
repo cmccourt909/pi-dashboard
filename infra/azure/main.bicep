@@ -333,18 +333,6 @@ resource backendApp 'Microsoft.App/containerApps@2024-03-01' = {
   ]
 }
 
-// ─── Custom Domain Managed Certificate ────────────────────────────────────────
-
-resource managedCert 'Microsoft.App/managedEnvironments/managedCertificates@2024-03-01' = if (customDomain != '') {
-  parent: containerEnv
-  name: '${customDomain}-cert'
-  location: location
-  properties: {
-    subjectName: customDomain
-    domainControlValidation: 'CNAME'
-  }
-}
-
 // ─── Frontend Container App ──────────────────────────────────────────────────
 
 resource frontendApp 'Microsoft.App/containerApps@2024-03-01' = {
@@ -364,19 +352,11 @@ resource frontendApp 'Microsoft.App/containerApps@2024-03-01' = {
         external: true  // Public-facing
         targetPort: 3000
         transport: 'http'
-        // Security: restrict CORS to the frontend's own domain only
         corsPolicy: {
-          allowedOrigins: customDomain != '' ? [defaultCorsOrigin, 'https://${customDomain}'] : [defaultCorsOrigin]
+          allowedOrigins: [defaultCorsOrigin, 'https://runwaypoint.app']
           allowedMethods: ['GET', 'POST', 'OPTIONS']
           allowedHeaders: ['Content-Type', 'Authorization', 'X-Upload-Key']
         }
-        customDomains: customDomain != '' ? [
-          {
-            name: customDomain
-            bindingType: 'SniEnabled'
-            certificateId: '${containerEnv.id}/managedCertificates/${customDomain}-cert'
-          }
-        ] : []
       }
       registries: [
         {
@@ -460,6 +440,7 @@ resource frontendAuth 'Microsoft.App/containerApps/authConfigs@2024-03-01' = if 
         '/api/seed-demo'
         '/api/enrich/findings'
         '/api/enrich/briefing'
+        '/api/enrich/status'
       ]
     }
     identityProviders: {
