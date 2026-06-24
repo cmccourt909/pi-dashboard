@@ -445,7 +445,7 @@ resource frontendAuth 'Microsoft.App/containerApps/authConfigs@2024-03-01' = if 
         enabled: true
         registration: {
           clientId: entraClientId
-          openIdIssuer: 'https://login.microsoftonline.com/${entraTenantId}/v2.0'
+          openIdIssuer: 'https://${environment().authentication.loginEndpoint}${entraTenantId}/v2.0'
         }
         validation: {
           allowedAudiences: [
@@ -477,7 +477,7 @@ resource gpt4oMiniDeployment 'Microsoft.CognitiveServices/accounts/deployments@2
   parent: openai
   name: 'gpt-4o-mini'
   sku: {
-    name: 'Standard'
+    name: 'GlobalStandard'
     capacity: 30  // 30K tokens per minute
   }
   properties: {
