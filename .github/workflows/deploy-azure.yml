@@ -82,6 +82,7 @@ jobs:
               entraClientId='${{ vars.ENTRA_CLIENT_ID2 }}' \
               entraTenantId='${{ vars.ENTRA_TENANT_ID }}' \
               corsOrigins='https://runwaypoint.app' \
+              customDomain='${{ vars.CUSTOM_DOMAIN }}' \
             --query "properties.outputs" \
             --output table
 

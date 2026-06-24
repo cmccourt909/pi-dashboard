@@ -56,6 +56,9 @@ param entraClientId string = ''
 @description('Azure AD (Entra ID) tenant ID for frontend authentication')
 param entraTenantId string = ''
 
+@description('Custom domain for the frontend (e.g. runwaypoint.app). Leave empty to skip.')
+param customDomain string = ''
+
 @description('Backend minimum replicas (0 for scale-to-zero)')
 @minValue(0)
 @maxValue(5)
@@ -330,6 +333,18 @@ resource backendApp 'Microsoft.App/containerApps@2024-03-01' = {
   ]
 }
 
+// ─── Custom Domain Managed Certificate ────────────────────────────────────────
+
+resource managedCert 'Microsoft.App/managedEnvironments/managedCertificates@2024-03-01' = if (customDomain != '') {
+  parent: containerEnv
+  name: '${customDomain}-cert'
+  location: location
+  properties: {
+    subjectName: customDomain
+    domainControlValidation: 'CNAME'
+  }
+}
+
 // ─── Frontend Container App ──────────────────────────────────────────────────
 
 resource frontendApp 'Microsoft.App/containerApps@2024-03-01' = {
@@ -351,10 +366,17 @@ resource frontendApp 'Microsoft.App/containerApps@2024-03-01' = {
         transport: 'http'
         // Security: restrict CORS to the frontend's own domain only
         corsPolicy: {
-          allowedOrigins: [defaultCorsOrigin]
+          allowedOrigins: customDomain != '' ? [defaultCorsOrigin, 'https://${customDomain}'] : [defaultCorsOrigin]
           allowedMethods: ['GET', 'POST', 'OPTIONS']
           allowedHeaders: ['Content-Type', 'Authorization', 'X-Upload-Key']
         }
+        customDomains: customDomain != '' ? [
+          {
+            name: customDomain
+            bindingType: 'SniEnabled'
+            certificateId: '${containerEnv.id}/managedCertificates/${customDomain}-cert'
+          }
+        ] : []
       }
       registries: [
         {
