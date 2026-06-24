@@ -361,14 +361,14 @@ resource frontendApp 'Microsoft.App/containerApps@2024-03-01' = {
           env: [
             {
               name: 'BACKEND_URL'
-              value: 'https://${backendApp.properties.configuration.ingress.fqdn}'
+              value: 'http://${backendApp.properties.configuration.ingress.fqdn}'
             }
           ]
           probes: [
             {
               type: 'Liveness'
               httpGet: {
-                path: '/'
+                path: '/api/health'
                 port: 3000
               }
               periodSeconds: 30
@@ -377,7 +377,7 @@ resource frontendApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               type: 'Readiness'
               httpGet: {
-                path: '/'
+                path: '/api/health'
                 port: 3000
               }
               initialDelaySeconds: 10
@@ -418,6 +418,9 @@ resource frontendAuth 'Microsoft.App/containerApps/authConfigs@2024-03-01' = if 
     }
     globalValidation: {
       unauthenticatedClientAction: 'RedirectToLoginPage'
+      excludedPaths: [
+        '/api/health'
+      ]
     }
     identityProviders: {
       azureActiveDirectory: {
