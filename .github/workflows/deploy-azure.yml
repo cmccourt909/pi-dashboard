@@ -111,8 +111,18 @@ jobs:
 
       - name: Build & push frontend image
         run: |
+          # Get the backend internal FQDN (created by Bicep in step 1)
+          BACKEND_FQDN=$(az containerapp show \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP || format('rg-{0}-{1}', env.PROJECT_NAME, env.ENVIRONMENT_NAME) }} \
+            --name ${{ env.PROJECT_NAME }}-${{ env.ENV_NAME_LOWER }}-backend \
+            --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || echo "")
+
+          BACKEND_URL="https://${BACKEND_FQDN}"
+          echo "Building frontend with BACKEND_URL=${BACKEND_URL}"
+
           docker build \
             -f dashboard/Dockerfile.frontend \
+            --build-arg BACKEND_URL="${BACKEND_URL}" \
             -t ${{ steps.get-acr.outputs.login_server }}/pi-dashboard-frontend:${{ env.IMAGE_TAG }} \
             -t ${{ steps.get-acr.outputs.login_server }}/pi-dashboard-frontend:latest \
             ./dashboard
