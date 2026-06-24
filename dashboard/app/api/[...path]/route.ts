@@ -27,6 +27,17 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   return proxy(request, await params);
 }
 
+export async function OPTIONS(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, X-Upload-Key, Authorization",
+    },
+  });
+}
+
 async function proxy(request: NextRequest, params: { path: string[] }) {
   const path = "/api/" + params.path.join("/");
 
