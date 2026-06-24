@@ -15,6 +15,8 @@ from app.api.routers.enrich import router as enrich_router
 # ─── Run migrations on startup ────────────────────────────────────────────────
 def _run_startup_migrations():
     """Ensure database schema is up to date on app startup."""
+    if os.environ.get("SKIP_STARTUP_MIGRATIONS"):
+        return
     try:
         from app.models import create_all
         create_all()
