@@ -445,7 +445,7 @@ resource frontendAuth 'Microsoft.App/containerApps/authConfigs@2024-03-01' = if 
         enabled: true
         registration: {
           clientId: entraClientId
-          openIdIssuer: 'https://${environment().authentication.loginEndpoint}${entraTenantId}/v2.0'
+          openIdIssuer: 'https://login.microsoftonline.com/${entraTenantId}/v2.0'
         }
         validation: {
           allowedAudiences: [
