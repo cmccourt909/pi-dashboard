@@ -144,7 +144,7 @@ export default function FindingsPage() {
               opacity: findings.length === 0 ? 0.4 : 1,
             }}
           >
-            {enriching ? "Enriching…" : "✦ Enrich with AI"}
+            {enriching ? "Asking Lodestar…" : "✦ Ask Lodestar"}
           </button>
           <button
             onClick={generateBriefing}
@@ -335,7 +335,7 @@ export default function FindingsPage() {
                   {/* AI enrichment section */}
                   {f.narrative && (
                     <div style={{ background: "var(--color-indigo-50)", borderRadius: "var(--radius-sm)", padding: "var(--space-3)", marginBottom: 6 }}>
-                      <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-indigo-600)", marginBottom: 4 }}>✦ AI insight</p>
+                      <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-indigo-600)", marginBottom: 4 }}>✦ Lodestar insight</p>
                       <p style={{ fontSize: 13, color: "var(--color-text)", lineHeight: 1.6, marginBottom: 6 }}>{f.narrative}</p>
                       {f.priority_rationale && (
                         <p style={{ fontSize: 12, color: "var(--color-text-muted)", fontStyle: "italic", marginBottom: 6 }}>{f.priority_rationale}</p>
