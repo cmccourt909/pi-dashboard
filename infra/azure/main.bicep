@@ -420,6 +420,7 @@ resource frontendAuth 'Microsoft.App/containerApps/authConfigs@2024-03-01' = if 
       unauthenticatedClientAction: 'RedirectToLoginPage'
       excludedPaths: [
         '/api/health'
+        '/api/seed-demo'
       ]
     }
     identityProviders: {
