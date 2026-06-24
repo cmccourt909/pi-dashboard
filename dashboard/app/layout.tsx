@@ -5,58 +5,66 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PI Health Dashboard",
-  description: "Program Increment risk and velocity tracker",
+  title: "Waypoint — Delivery Intelligence",
+  description: "Know where every program stands. Before someone has to ask.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
         <header style={{
           position: "sticky",
           top: 0,
           zIndex: 50,
-          borderBottom: "1px solid var(--border)",
-          background: "var(--bg-panel)",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-          padding: "0 32px",
-          height: 52,
+          background: "var(--color-indigo-900)",
+          height: 48,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          padding: "0 var(--space-6)",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-              <rect x="2" y="2" width="9" height="9" stroke="var(--accent)" strokeWidth="1.5" />
-              <rect x="13" y="2" width="9" height="9" stroke="var(--status-warning)" strokeWidth="1.5" />
-              <rect x="2" y="13" width="9" height="9" stroke="var(--status-critical)" strokeWidth="1.5" />
-              <rect x="13" y="13" width="9" height="9" stroke="var(--status-healthy)" strokeWidth="1.5" />
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            {/* Waypoint logo mark — stylised pin */}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="10" r="7" stroke="white" strokeWidth="1.5" fill="none" />
+              <circle cx="12" cy="10" r="3" fill="#E8622A" />
+              <line x1="12" y1="17" x2="12" y2="22" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
-            <span style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 700,
-              fontSize: 17,
-              letterSpacing: "0.05em",
-              color: "var(--text-primary)",
-            }}>
-              PI HEALTH
-            </span>
-            <span style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              color: "var(--text-muted)",
-              letterSpacing: "0.1em",
-            }}>
-              DASHBOARD
-            </span>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+              <span style={{
+                fontWeight: 500,
+                fontSize: 15,
+                letterSpacing: "-0.02em",
+                color: "white",
+              }}>
+                Waypoint
+              </span>
+              <span style={{
+                fontSize: 13,
+                color: "var(--color-indigo-400)",
+                fontWeight: 400,
+              }}>
+                Delivery intelligence
+              </span>
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-            <AutoRefresh intervalSeconds={60} />
+          <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
             <NavLinks />
+            <AutoRefresh intervalSeconds={60} />
           </div>
         </header>
-        <main style={{ maxWidth: "100%", margin: "0 auto", padding: "28px 32px 64px" }}>
+        <main
+          id="main-content"
+          style={{
+            maxWidth: 1280,
+            margin: "0 auto",
+            padding: "var(--space-8) var(--space-6) 64px",
+          }}
+        >
           <ErrorBoundary>
             {children}
           </ErrorBoundary>
