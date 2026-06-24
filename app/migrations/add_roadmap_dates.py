@@ -14,11 +14,13 @@ from app.models import get_engine
 
 def run():
     engine = get_engine()
+    # Use TIMESTAMP for Postgres, DATETIME for SQLite
+    col_type = "TIMESTAMP" if "postgresql" in str(engine.url) else "DATETIME"
     with engine.connect() as conn:
         for col in ("target_start_date", "target_end_date"):
             try:
                 conn.execute(
-                    sqlalchemy.text(f"ALTER TABLE issue ADD COLUMN {col} DATETIME")
+                    sqlalchemy.text(f"ALTER TABLE issue ADD COLUMN {col} {col_type}")
                 )
                 print(f"  Added column: {col}")
             except Exception:

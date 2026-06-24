@@ -94,14 +94,19 @@ def seed():
 
     with SessionLocal() as session:
         # ─── Clean existing data ──────────────────────────────────────────
-        session.execute(FeatureMembership.__table__.delete())
-        session.execute(IssueLink.__table__.delete())
-        session.execute(Issue.__table__.delete())
-        session.execute(Sprint.__table__.delete())
-        session.execute(ProgramIncrement.__table__.delete())
-        session.execute(Project.__table__.delete())
-        session.execute(Site.__table__.delete())
-        session.execute(Organization.__table__.delete())
+        # Delete in FK-safe order (children before parents)
+        from sqlalchemy import text as _text
+        if "postgresql" in str(engine.url):
+            session.execute(_text("TRUNCATE raw_issue_snapshot, feature_membership, issue_link, issue, sprint, program_increment, project, site, organization RESTART IDENTITY CASCADE"))
+        else:
+            session.execute(FeatureMembership.__table__.delete())
+            session.execute(IssueLink.__table__.delete())
+            session.execute(Issue.__table__.delete())
+            session.execute(Sprint.__table__.delete())
+            session.execute(ProgramIncrement.__table__.delete())
+            session.execute(Project.__table__.delete())
+            session.execute(Site.__table__.delete())
+            session.execute(Organization.__table__.delete())
         session.commit()
 
         # ─── Organization & Site ──────────────────────────────────────────
