@@ -56,9 +56,6 @@ param entraClientId string = ''
 @description('Azure AD (Entra ID) tenant ID for frontend authentication')
 param entraTenantId string = ''
 
-@description('Custom domain for the frontend (e.g. runwaypoint.app). Leave empty to skip.')
-param customDomain string = ''
-
 @description('Backend minimum replicas (0 for scale-to-zero)')
 @minValue(0)
 @maxValue(5)
