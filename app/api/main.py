@@ -79,7 +79,12 @@ def seed_demo(request: Request):
 
     if not authenticated:
         from fastapi import HTTPException
-        raise HTTPException(status_code=401, detail="Invalid or missing X-Upload-Key header.")
+        raise HTTPException(
+            status_code=401,
+            detail=f"Invalid or missing X-Upload-Key header. "
+                   f"Got key length: {len(provided_key)}, expected length: {len(upload_key)}, "
+                   f"client_principal present: {bool(client_principal)}"
+        )
 
     try:
         from app.seed_demo import seed
