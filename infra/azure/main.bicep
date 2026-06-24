@@ -246,10 +246,12 @@ resource backendApp 'Microsoft.App/containerApps@2024-03-01' = {
           name: 'db-url'
           value: dbConnectionString
         }
-        {
-          name: 'upload-api-key'
-          value: uploadApiKey
-        }
+        ...(uploadApiKey != '' ? [
+          {
+            name: 'upload-api-key'
+            value: uploadApiKey
+          }
+        ] : [])
       ]
     }
     template: {
@@ -266,10 +268,12 @@ resource backendApp 'Microsoft.App/containerApps@2024-03-01' = {
               name: 'DB_URL'
               secretRef: 'db-url'
             }
-            {
-              name: 'UPLOAD_API_KEY'
-              secretRef: 'upload-api-key'
-            }
+            ...(uploadApiKey != '' ? [
+              {
+                name: 'UPLOAD_API_KEY'
+                secretRef: 'upload-api-key'
+              }
+            ] : [])
             {
               name: 'CORS_ORIGINS'
               value: effectiveCorsOrigins
@@ -445,6 +449,7 @@ resource frontendAuth 'Microsoft.App/containerApps/authConfigs@2024-03-01' = if 
         enabled: true
         registration: {
           clientId: entraClientId
+          #disable-next-line no-hardcoded-env-urls
           openIdIssuer: 'https://login.microsoftonline.com/${entraTenantId}/v2.0'
         }
         validation: {
