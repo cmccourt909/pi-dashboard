@@ -36,7 +36,7 @@ export default function AdminPage() {
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (uploadKey) headers["X-Upload-Key"] = uploadKey;
-      const res = await fetch(`${API_BASE}/api/seed-demo`, { method: "POST", headers });
+      const res = await fetch(`${API_BASE}/api/seed-demo`, { method: "POST", headers, credentials: "include" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail ?? `HTTP ${res.status}`);
       setSeedState("done");

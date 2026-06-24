@@ -43,13 +43,24 @@ def health():
 
 @app.post("/api/seed-demo")
 def seed_demo(request: Request):
-    """Seed demo data. Protected by UPLOAD_API_KEY."""
+    """Seed demo data. Protected by UPLOAD_API_KEY or Entra ID auth."""
     import hmac
+    import json as _json
+
+    # Check auth: Entra ID header OR API key
+    client_principal = request.headers.get("x-ms-client-principal")
     upload_key = os.environ.get("UPLOAD_API_KEY", "")
     provided_key = request.headers.get("x-upload-key", "")
-    if not upload_key:
-        pass
-    elif not provided_key or not hmac.compare_digest(provided_key, upload_key):
+
+    authenticated = False
+    if client_principal:
+        authenticated = True
+    elif not upload_key:
+        authenticated = True  # No key configured = dev mode
+    elif provided_key and hmac.compare_digest(provided_key, upload_key):
+        authenticated = True
+
+    if not authenticated:
         from fastapi import HTTPException
         raise HTTPException(status_code=401, detail="Invalid or missing X-Upload-Key header.")
 
@@ -60,8 +71,12 @@ def seed_demo(request: Request):
         invalidate_cache()
         return {"status": "ok", "message": "Demo data seeded successfully"}
     except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        detail = f"{type(e).__name__}: {str(e)}"
+        # Safely encode as JSON
         return Response(
-            content=f'{{"status": "error", "detail": "{type(e).__name__}: {str(e)}"}}',
+            content=_json.dumps({"status": "error", "detail": detail, "traceback": tb[-500:]}),
             status_code=500,
             media_type="application/json",
         )

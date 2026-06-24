@@ -97,7 +97,14 @@ def seed():
         # Delete in FK-safe order (children before parents)
         from sqlalchemy import text as _text
         if "postgresql" in str(engine.url):
-            session.execute(_text("TRUNCATE raw_issue_snapshot, feature_membership, issue_link, issue, sprint, program_increment, project, site, organization RESTART IDENTITY CASCADE"))
+            # Only truncate tables that exist
+            session.execute(_text(
+                "DO $$ BEGIN "
+                "EXECUTE (SELECT string_agg('TRUNCATE TABLE ' || tablename || ' RESTART IDENTITY CASCADE', '; ') "
+                "FROM pg_tables WHERE schemaname = 'public' AND tablename IN "
+                "('raw_issue_snapshot','feature_membership','issue_link','issue','sprint','program_increment','project','site','organization')); "
+                "END $$"
+            ))
         else:
             session.execute(FeatureMembership.__table__.delete())
             session.execute(IssueLink.__table__.delete())
