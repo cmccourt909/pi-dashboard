@@ -103,6 +103,9 @@ var dbConnectionString = 'postgresql://${dbAdminLogin}:${dbAdminPassword}@${dbSe
 // Whether Entra ID auth is configured
 var entraAuthEnabled = entraClientId != '' && entraTenantId != ''
 
+// Azure OpenAI resource name
+var openaiName = '${resourcePrefix}-openai'
+
 // ─── Log Analytics Workspace ─────────────────────────────────────────────────
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
@@ -271,6 +274,18 @@ resource backendApp 'Microsoft.App/containerApps@2024-03-01' = {
               name: 'CORS_ORIGINS'
               value: effectiveCorsOrigins
             }
+            {
+              name: 'AZURE_OPENAI_ENDPOINT'
+              value: openai.properties.endpoint
+            }
+            {
+              name: 'AZURE_OPENAI_DEPLOYMENT'
+              value: gpt4oMiniDeployment.name
+            }
+            {
+              name: 'AZURE_CLIENT_ID'
+              value: managedIdentity.properties.clientId
+            }
           ]
           probes: [
             {
@@ -421,6 +436,8 @@ resource frontendAuth 'Microsoft.App/containerApps/authConfigs@2024-03-01' = if 
       excludedPaths: [
         '/api/health'
         '/api/seed-demo'
+        '/api/enrich/findings'
+        '/api/enrich/briefing'
       ]
     }
     identityProviders: {
@@ -440,6 +457,49 @@ resource frontendAuth 'Microsoft.App/containerApps/authConfigs@2024-03-01' = if 
   }
 }
 
+// ─── Azure OpenAI Service ────────────────────────────────────────────────────
+
+resource openai 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
+  name: openaiName
+  location: location
+  kind: 'OpenAI'
+  sku: {
+    name: 'S0'
+  }
+  properties: {
+    customSubDomainName: openaiName
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
+// Deploy GPT-4o-mini model
+resource gpt4oMiniDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
+  parent: openai
+  name: 'gpt-4o-mini'
+  sku: {
+    name: 'Standard'
+    capacity: 30  // 30K tokens per minute
+  }
+  properties: {
+    model: {
+      format: 'OpenAI'
+      name: 'gpt-4o-mini'
+      version: '2024-07-18'
+    }
+  }
+}
+
+// Assign Cognitive Services OpenAI User role to the managed identity
+resource openaiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(openai.id, managedIdentity.id, 'openai-user')
+  scope: openai
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd') // Cognitive Services OpenAI User
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 // ─── Outputs ─────────────────────────────────────────────────────────────────
 
 output acrLoginServer string = acr.properties.loginServer
@@ -451,3 +511,5 @@ output containerEnvName string = containerEnv.name
 output resourceGroupName string = resourceGroup().name
 output managedIdentityClientId string = managedIdentity.properties.clientId
 output authEnabled bool = entraAuthEnabled
+output openaiEndpoint string = openai.properties.endpoint
+output openaiDeploymentName string = gpt4oMiniDeployment.name
