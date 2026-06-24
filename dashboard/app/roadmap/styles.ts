@@ -76,7 +76,7 @@ export const ROADMAP_CSS = `
   .timeline-band:nth-child(even) { background: #dbeafe; }
 
   /* Today line */
-  .today-line { position: absolute; top: 0; bottom: 0; width: 2px; background: #f97316; opacity: 0.8; z-index: 5; pointer-events: none; }
+  .today-line { position: absolute; top: 0; bottom: 0; width: 2px; background: #E8622A; opacity: 0.9; z-index: 5; pointer-events: none; }
 
   /* Gantt rows */
   .gantt-row { display: flex; border-bottom: 1px solid var(--gray-100); min-height: 56px; }

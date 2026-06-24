@@ -227,3 +227,33 @@ button, .btn {
     animation-duration: 0.01ms !important;
   }
 }
+
+
+/* ── Responsive Breakpoints ──────────────────────────────────────── */
+
+/* Tablet: right rail collapses below main, stat bar 2x2 */
+@media (max-width: 1279px) {
+  .stat-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .content-two-col {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Mobile landscape: single column, nav collapses */
+@media (max-width: 1023px) {
+  .stat-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Mobile: full stack */
+@media (max-width: 767px) {
+  .stat-grid-4 {
+    grid-template-columns: 1fr !important;
+  }
+  .nav-links {
+    display: none !important;
+  }
+}

@@ -348,7 +348,7 @@ export default function RoadmapPage() {
             <div className="legend-item"><div className="legend-dot" style={{ borderColor: "var(--red)" }} /> Overdue</div>
             <div className="legend-item"><div className="legend-dot" style={{ borderColor: "var(--green)" }} /> Complete</div>
             <div className="legend-item" style={{ marginLeft: "auto" }}>
-              <div style={{ width: 16, height: 2, background: "#f97316", borderRadius: 1 }} /> Today
+              <div style={{ width: 16, height: 2, background: "#E8622A", borderRadius: 1 }} /> Today
             </div>
           </div>
         </div>
