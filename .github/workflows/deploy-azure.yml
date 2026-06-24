@@ -79,7 +79,7 @@ jobs:
               useDefaultImage=true \
               dbAdminPassword='${{ secrets.DB_ADMIN_PASSWORD }}' \
               uploadApiKey='${{ secrets.UPLOAD_API_KEY }}' \
-              entraClientId='${{ vars.ENTRA_CLIENT_ID }}' \
+              entraClientId='${{ vars.ENTRA_CLIENT_ID2 }}' \
               entraTenantId='${{ vars.ENTRA_TENANT_ID }}' \
             --query "properties.outputs" \
             --output table
@@ -163,7 +163,7 @@ jobs:
           echo "| Resource | Value |" >> "$GITHUB_STEP_SUMMARY"
           echo "|----------|-------|" >> "$GITHUB_STEP_SUMMARY"
           echo "| Frontend | https://$FRONTEND_FQDN |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Auth | Entra ID (${{ vars.ENTRA_CLIENT_ID }}) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Auth | Entra ID (${{ vars.ENTRA_CLIENT_ID2 }}) |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Image Tag | \`${{ env.IMAGE_TAG }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Environment | ${{ env.ENVIRONMENT_NAME }} |" >> "$GITHUB_STEP_SUMMARY"
           echo ""
