@@ -3,52 +3,38 @@
 import { usePathname } from "next/navigation";
 
 const LINKS = [
-  { href: "/", label: "PI Overview" },
+  { href: "/", label: "Overview" },
   { href: "/features", label: "Features" },
   { href: "/roadmap", label: "Roadmap" },
   { href: "/forecast", label: "Forecast" },
-  { href: "/admin", label: "Admin", muted: true },
+  { href: "/findings", label: "Findings" },
+  { href: "/admin", label: "Admin" },
 ];
 
 export default function NavLinks() {
   const pathname = usePathname();
 
   return (
-    <nav style={{ display: "flex", gap: 24 }}>
-      {LINKS.map(({ href, label, muted }) => {
+    <nav style={{ display: "flex", gap: 20 }} aria-label="Main navigation">
+      {LINKS.map(({ href, label }) => {
         const active = pathname === href;
         return (
           <a
             key={href}
             href={href}
+            aria-current={active ? "page" : undefined}
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: "0.1em",
-              color: active
-                ? "var(--accent)"
-                : muted
-                ? "var(--text-muted)"
-                : "var(--text-secondary)",
-              textTransform: "uppercase",
+              fontSize: 13,
+              fontWeight: 400,
+              color: active ? "white" : "rgba(255, 255, 255, 0.55)",
+              transition: "color 0.15s",
               padding: "4px 0",
-              borderBottom: `2px solid ${active ? "var(--accent)" : "transparent"}`,
-              transition: "color 0.15s, border-color 0.15s",
             }}
             onMouseEnter={(e) => {
-              const el = e.currentTarget as HTMLAnchorElement;
-              el.style.color = "var(--accent)";
-              el.style.borderBottomColor = "var(--accent)";
+              if (!active) (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255, 255, 255, 0.8)";
             }}
             onMouseLeave={(e) => {
-              const el = e.currentTarget as HTMLAnchorElement;
-              el.style.color = active
-                ? "var(--accent)"
-                : muted
-                ? "var(--text-muted)"
-                : "var(--text-secondary)";
-              el.style.borderBottomColor = active ? "var(--accent)" : "transparent";
+              if (!active) (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255, 255, 255, 0.55)";
             }}
           >
             {label}
