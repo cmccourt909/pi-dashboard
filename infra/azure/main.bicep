@@ -361,7 +361,7 @@ resource frontendApp 'Microsoft.App/containerApps@2024-03-01' = {
           env: [
             {
               name: 'BACKEND_URL'
-              value: 'http://${backendApp.properties.configuration.ingress.fqdn}'
+              value: 'https://${backendApp.properties.configuration.ingress.fqdn}'
             }
           ]
           probes: [
