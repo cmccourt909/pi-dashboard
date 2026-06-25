@@ -56,6 +56,8 @@ export interface FeatureItem {
   sprint_breakdown: SprintBreakdown[];
   lodestar_static: string | null;
   generated_at: string | null;
+  /** Phase 2: prompt template version used to generate lodestar_static (e.g. 'v1.0'). */
+  lodestar_prompt_version: string | null;
 }
 
 /**
@@ -67,4 +69,39 @@ export interface KPISummary {
   at_risk: number;
   total_stories: number;
   blocked: number;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2 — Lodestar SSE types
+// ---------------------------------------------------------------------------
+
+/**
+ * NarrativeChunk — the discriminated union emitted by the Lodestar SSE endpoint.
+ *
+ * The server emits events in this sequence:
+ *   1. { type: 'meta', promptVersion: 'v1.0' }   — first frame, before any chunk
+ *   2. { type: 'chunk', text: '...' }             — one per token batch
+ *   3. { type: 'done' }                           — stream complete
+ *
+ * On error at any point:
+ *   { type: 'error', error: '<message>' }
+ */
+export type NarrativeChunk =
+  | { type: "meta"; promptVersion: string }
+  | { type: "chunk"; text: string }
+  | { type: "done" }
+  | { type: "error"; error: string };
+
+/** StreamStatus state machine for useLodestarStream. */
+export type StreamStatus = "idle" | "streaming" | "complete" | "error";
+
+/** Return type of the useLodestarStream hook. */
+export interface UseLodestarStreamResult {
+  status: StreamStatus;
+  text: string;
+  /** Prompt version from the meta SSE event, e.g. 'v1.0'. Null until received. */
+  promptVersion: string | null;
+  error: string | null;
+  retry: () => void;
+  cancel: () => void;
 }
