@@ -1,21 +1,6 @@
 "use client";
 
 // dashboard/components/roadmap/hooks/useLodestarStream.ts
-//
-// useLodestarStream — Phase 2 (T2.2)
-//
-// Encapsulates the full Lodestar SSE lifecycle:
-//   - EventSource creation and teardown tied to drawer open/close
-//   - StreamStatus state machine (idle → streaming → complete | error)
-//   - Session-level LRU cache (50-entry cap, keyed by pi:featureKey)
-//   - Prompt version capture from the 'meta' SSE event
-//   - Retry and cancel controls
-//
-// Pre-build decisions applied:
-//   1. Prompt version read from { type: 'meta', promptVersion } SSE event —
-//      native EventSource cannot access response headers.
-//   2. Cache keyed by `${pi}:${featureKey}` — prevents cross-PI cache
-//      poisoning if RoadmapPage does not fully remount on PI switch.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
@@ -64,7 +49,6 @@ class LRUCache<K, V> {
   }
 }
 
-// Module-level singleton: survives re-renders, cleared on full page navigation.
 const sessionCache = new LRUCache<string, CacheEntry>(50);
 
 function cacheKey(pi: string, featureKey: string): string {
@@ -87,6 +71,12 @@ export function useLodestarStream(
 
   const eventSourceRef = useRef<EventSource | null>(null);
 
+  // Tracks which pi:featureKey the current stream belongs to.
+  // Scopes the status guard so switching features always opens a new stream
+  // even when status is still complete from the previous feature.
+  // Fix for T2.2 — Lodestar panel does not update on feature switch.
+  const currentKeyRef = useRef<string | null>(null);
+
   const closeStream = useCallback(() => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
@@ -96,6 +86,7 @@ export function useLodestarStream(
 
   const cancel = useCallback(() => {
     closeStream();
+    currentKeyRef.current = null;
     setStatus("idle");
     setText("");
     setPromptVersion(null);
@@ -104,17 +95,13 @@ export function useLodestarStream(
 
   const retry = useCallback(() => {
     closeStream();
+    currentKeyRef.current = null;
     setError(null);
     setStatus("idle");
     setText("");
     setPromptVersion(null);
   }, [closeStream]);
 
-  // ---------------------------------------------------------------------------
-  // Main effect — open/close EventSource based on active + key pair
-  // The EventSource opens only after the drawer is active (R14.10),
-  // which DetailDrawer controls via the `open` prop it passes as `active`.
-  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!active || !pi || !featureKey) {
       closeStream();
@@ -124,22 +111,26 @@ export function useLodestarStream(
 
     const key = cacheKey(pi, featureKey);
 
-    // Cache hit — no new stream needed (R14.7)
+    // Cache hit
     const cached = sessionCache.get(key);
     if (cached) {
       setText(cached.text);
       setPromptVersion(cached.promptVersion);
       setStatus("complete");
+      currentKeyRef.current = key;
       return;
     }
 
-    // Already streaming or complete for this key
-    if (status === "streaming" || status === "complete") {
+    // Same key already streaming or complete — don't re-open
+    if (
+      currentKeyRef.current === key &&
+      (status === "streaming" || status === "complete")
+    ) {
       return;
     }
 
-    // The SSE endpoint routes through Next.js rewrite at /api/[...path]/route.ts
-    // which proxies to the FastAPI backend — same pattern as other API calls.
+    currentKeyRef.current = key;
+
     const url = `/api/pis/${encodeURIComponent(pi)}/features/${encodeURIComponent(featureKey)}/lodestar`;
     const es = new EventSource(url);
     eventSourceRef.current = es;
@@ -165,12 +156,10 @@ export function useLodestarStream(
           receivedVersion = parsed.promptVersion;
           setPromptVersion(parsed.promptVersion);
           break;
-
         case "chunk":
           accumulated += parsed.text;
           setText(accumulated);
           break;
-
         case "done":
           es.close();
           eventSourceRef.current = null;
@@ -180,7 +169,6 @@ export function useLodestarStream(
           });
           setStatus("complete");
           break;
-
         case "error":
           es.close();
           eventSourceRef.current = null;
@@ -193,24 +181,20 @@ export function useLodestarStream(
     es.onerror = () => {
       es.close();
       eventSourceRef.current = null;
-      setError(
-        "Connection to Lodestar failed. Check network or CORS configuration."
-      );
+      setError("Connection to Lodestar failed. Check network or CORS configuration.");
       setStatus("error");
     };
 
     return () => {
       closeStream();
     };
-    // status intentionally excluded — prevents reopening on status change;
-    // cache-hit path handled above on re-render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, pi, featureKey, closeStream]);
 
-  // Drawer close: reset to idle, retain cache
   useEffect(() => {
     if (!active) {
       closeStream();
+      currentKeyRef.current = null;
       setStatus((prev) => (prev !== "idle" ? "idle" : prev));
     }
   }, [active, closeStream]);
