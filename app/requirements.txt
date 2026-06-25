@@ -9,3 +9,4 @@ python-multipart>=0.0.9
 slowapi>=0.1.9
 openai>=1.30
 azure-identity>=1.16
+sse-starlette>=1.6.5
