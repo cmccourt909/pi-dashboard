@@ -59,3 +59,35 @@ class FindingOut(BaseModel):
     detail: str
     recommendation: str
     issue_keys: list[str]
+
+
+class PICompletionOut(BaseModel):
+    pi_name: str
+    done_pct: float
+    prog_pct: float
+    todo_pct: float
+    story_count: int
+    sp_done: float
+    sp_total: float
+
+
+class SprintBreakdownOut(BaseModel):
+    sprint_name: str
+    state: str  # "active" | "future" | "closed"
+    story_count: int
+    done_count: int
+
+
+class FeatureItemOut(BaseModel):
+    feature_key: str
+    summary: str
+    team: str
+    assignee: Optional[str]
+    status: str
+    status_category: str
+    rag_status: str  # "red" | "amber" | "green"
+    pi_completion: list[PICompletionOut]
+    blockers: list[str]
+    is_blocked_by: list[str]
+    sprint_breakdown: list[SprintBreakdownOut]
+    lodestar_static: Optional[str]
