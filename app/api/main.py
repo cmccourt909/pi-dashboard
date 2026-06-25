@@ -12,6 +12,7 @@ from app.api.routers.upload import router as upload_router
 from app.api.routers.roadmap import pi_features_router
 from app.api.routers.enrich import router as enrich_router
 from app.api.routers.narrative import router as narrative_router, batch_router as narrative_batch_router
+from app.api.routers.lodestar import lodestar_router
 
 # ─── Run migrations on startup ────────────────────────────────────────────────
 def _run_startup_migrations():
@@ -23,6 +24,8 @@ def _run_startup_migrations():
         create_all()
         from app.migrations.add_roadmap_dates import run as run_roadmap_migration
         run_roadmap_migration()
+        from app.migrations.add_lodestar_prompt_version import run as run_lodestar_migration
+        run_lodestar_migration()
     except Exception as e:
         print(f"[startup] Migration warning: {e}")
 
@@ -55,6 +58,7 @@ app.include_router(pi_features_router)
 app.include_router(enrich_router)
 app.include_router(narrative_router)
 app.include_router(narrative_batch_router)
+app.include_router(lodestar_router)
 
 @app.get("/health")
 def health():
