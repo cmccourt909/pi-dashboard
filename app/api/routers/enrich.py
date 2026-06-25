@@ -318,14 +318,14 @@ Produce a structured executive briefing with:
   1. risk_headline — One sentence suitable for an email subject line.
   2. executive_summary — 3-4 sentences covering overall health, top risk, and trajectory. Confident tone, no hedging.
   3. findings_narrative — Prose summary of findings grouped by theme. Lead with criticals. 150-200 words.
-  4. recommended_actions — 3-5 actions for the SteerCo to ratify. Each must state: action, owner role, due date.
+  4. recommended_actions — 3-5 actions for the SteerCo to ratify. Each is a SINGLE STRING in the format: "Action description | Owner: role | Due: YYYY-MM-DD"
 
 Return ONLY valid JSON. No preamble, no markdown fences.
 {{
   "risk_headline": "string",
   "executive_summary": "string",
   "findings_narrative": "string",
-  "recommended_actions": ["string"]
+  "recommended_actions": ["Action description | Owner: role | Due: YYYY-MM-DD"]
 }}
 
 Findings:
@@ -461,6 +461,30 @@ async def generate_briefing(request: BriefingRequest):
             temperature=0.4,
         )
         parsed = json.loads(text)
+
+        # LLM sometimes returns recommended_actions as list of objects
+        # instead of list of strings. Coerce to strings if needed.
+        if "recommended_actions" in parsed and isinstance(parsed["recommended_actions"], list):
+            coerced = []
+            for item in parsed["recommended_actions"]:
+                if isinstance(item, str):
+                    coerced.append(item)
+                elif isinstance(item, dict):
+                    # Flatten dict fields into a readable string
+                    parts = []
+                    if "action" in item:
+                        parts.append(item["action"])
+                    if "owner" in item:
+                        parts.append(f"Owner: {item['owner']}")
+                    if "owner_role" in item:
+                        parts.append(f"Owner: {item['owner_role']}")
+                    if "due_date" in item:
+                        parts.append(f"Due: {item['due_date']}")
+                    coerced.append(" | ".join(parts) if parts else str(item))
+                else:
+                    coerced.append(str(item))
+            parsed["recommended_actions"] = coerced
+
         result = BriefingOutput(**parsed)
 
         # Cache the result
