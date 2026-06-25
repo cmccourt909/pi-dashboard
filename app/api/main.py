@@ -48,6 +48,7 @@ app.add_middleware(
     allow_origins=_allowed_origins,
     allow_methods=["GET", "POST"],   # POST needed for /api/upload
     allow_headers=["Content-Type", "Authorization", "X-Upload-Key"],  # Security: restrict to specific headers
+    expose_headers=["X-Lodestar-Prompt-Version"],  # T2.1: allow browser to read SSE prompt version header
 )
 
 app.include_router(pis_router)
