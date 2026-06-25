@@ -60,6 +60,7 @@ const featureItemArb: fc.Arbitrary<FeatureItem> = fc.record({
     { maxLength: 7 }
   ),
   lodestar_static: fc.option(fc.string({ minLength: 1, maxLength: 100 }), { nil: null }),
+  generated_at: fc.option(fc.constant("2025-01-15T10:30:00Z"), { nil: null }),
 });
 
 // ─── Property 1: Completion percentages sum to 100 ──────────────────────────

@@ -42,6 +42,7 @@ const mockFeature: FeatureItem = {
     { sprint_name: "Sprint 5", state: "future", story_count: 0, done_count: 0 },
   ],
   lodestar_static: null,
+  generated_at: null,
 };
 
 describe("FeatureRow", () => {

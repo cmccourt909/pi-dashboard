@@ -258,6 +258,25 @@ class FeatureMembership(Base):
     source: Mapped[str] = mapped_column(String(50))   # 'parent', 'relates_link', 'feature_link_field', 'label'
 
 
+class FeatureNarrative(Base):
+    """
+    AI-generated delivery narrative for a feature (epic). One narrative per feature,
+    persisted with generation metadata. Replaced (upserted) on each regeneration.
+    """
+    __tablename__ = "feature_narrative"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    feature_issue_id: Mapped[int] = mapped_column(
+        ForeignKey("issue.id"), unique=True, nullable=False
+    )
+    narrative_text: Mapped[str] = mapped_column(Text, nullable=False)
+    generated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    model_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    is_stale: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    feature: Mapped["Issue"] = relationship()
+
+
 # ---------- bootstrap ----------
 
 def get_engine():

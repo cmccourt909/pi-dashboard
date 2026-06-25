@@ -55,6 +55,7 @@ export interface FeatureItem {
   is_blocked_by: string[];   // issue keys blocking this feature
   sprint_breakdown: SprintBreakdown[];
   lodestar_static: string | null;
+  generated_at: string | null;
 }
 
 /**

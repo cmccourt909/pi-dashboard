@@ -42,7 +42,12 @@ from app.models import (
     get_session_maker,
 )
 from app.engine import invalidate_cache
+from app.narrative import capture_pre_sync_snapshot, handle_post_sync_staleness
 from sqlalchemy import select
+
+import logging
+
+_upload_logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/upload", tags=["upload"])
 
@@ -710,12 +715,26 @@ async def upload_file(file: UploadFile = File(...), _auth: None = Depends(verify
     SessionLocal = get_session_maker()
     try:
         with SessionLocal() as session:
+            # Capture pre-sync snapshot for staleness detection
+            pre_snapshot = capture_pre_sync_snapshot(session)
+
             if file_type == "stories_csv":
                 result = ingest_stories_csv(df, session)
             elif file_type == "roadmap_xlsx":
                 result = ingest_roadmap_xlsx(df, session)
             else:
                 result = ingest_features_xlsx(df, session)
+
+            # Detect staleness and enqueue background regeneration
+            try:
+                stale_count = handle_post_sync_staleness(session, pre_snapshot)
+                if stale_count > 0:
+                    _upload_logger.info(
+                        "Post-sync staleness: %d narrative(s) marked stale.", stale_count
+                    )
+            except Exception as e:
+                # Staleness detection should never break the upload flow
+                _upload_logger.error("Post-sync staleness detection failed: %s", e)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ingestion error: {e}")
 
