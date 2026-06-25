@@ -273,6 +273,7 @@ class FeatureNarrative(Base):
     generated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     model_name: Mapped[str] = mapped_column(String(100), nullable=False)
     is_stale: Mapped[bool] = mapped_column(Boolean, default=False)
+    lodestar_prompt_version: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
     feature: Mapped["Issue"] = relationship()
 
