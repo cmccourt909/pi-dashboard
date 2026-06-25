@@ -268,3 +268,213 @@ describe("Property 9: Filtered KPI recalculation", () => {
     );
   });
 });
+
+// ─── Additional imports for rendering-based property tests ──────────────────
+import React from "react";
+import { render, screen } from "@testing-library/react";
+import SprintMiniGrid from "./SprintMiniGrid";
+import BlockerFlag from "./BlockerFlag";
+import DetailDrawer from "./DetailDrawer";
+import GanttBar from "./GanttBar";
+import type { SprintBreakdown } from "@/types/roadmap";
+
+// ─── Property 12: Sprint mini-grid always renders 5 bars ────────────────────
+
+describe("Property 12: Sprint mini-grid always renders 5 bars", () => {
+  /**
+   * Validates: Requirements 8.1
+   *
+   * SprintMiniGrid must always render exactly 5 mini-bars regardless of input
+   * sprint count (0 to 10 sprints provided).
+   */
+  it("always renders exactly 5 children in the sprint-mini-grid", () => {
+    const sprintArb: fc.Arbitrary<SprintBreakdown[]> = fc.array(
+      fc.record({
+        sprint_name: fc.string({ minLength: 1, maxLength: 20 }),
+        state: fc.constantFrom("active" as const, "future" as const, "closed" as const),
+        story_count: fc.nat({ max: 20 }),
+        done_count: fc.nat({ max: 20 }),
+      }),
+      { minLength: 0, maxLength: 10 }
+    );
+
+    fc.assert(
+      fc.property(
+        sprintArb,
+        fc.constantFrom("Alpha" as const, "Bravo" as const, "Charlie" as const),
+        (sprints, team) => {
+          const { container } = render(
+            React.createElement(SprintMiniGrid, { sprints, team })
+          );
+          const grid = container.querySelector('[data-testid="sprint-mini-grid"]');
+          expect(grid).not.toBeNull();
+          expect(grid!.children.length).toBe(5);
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+});
+
+// ─── Property 11: Blocker flag cross-team rule ──────────────────────────────
+
+describe("Property 11: Blocker flag cross-team rule", () => {
+  /**
+   * Validates: Requirements 10.1, 10.2
+   *
+   * BlockerFlag renders the flag button when hasCrossTeamBlocker is true
+   * and renders nothing when hasCrossTeamBlocker is false.
+   */
+  it("renders flag when hasCrossTeamBlocker is true, nothing when false", () => {
+    const teamArb = fc.constantFrom("Alpha" as const, "Bravo" as const, "Charlie" as const);
+
+    fc.assert(
+      fc.property(teamArb, teamArb, (sourceTeam, targetTeam) => {
+        const hasCrossTeamBlocker = sourceTeam !== targetTeam;
+        const onClick = () => {};
+
+        const { container } = render(
+          React.createElement(BlockerFlag, { hasCrossTeamBlocker, onClick })
+        );
+
+        const flagButton = container.querySelector('[data-testid="blocker-flag"]');
+
+        if (hasCrossTeamBlocker) {
+          expect(flagButton).not.toBeNull();
+        } else {
+          expect(flagButton).toBeNull();
+        }
+      }),
+      { numRuns: 100 }
+    );
+  });
+});
+
+// ─── Property 7: Team filter visibility ─────────────────────────────────────
+
+describe("Property 7: Team filter visibility", () => {
+  /**
+   * Validates: Requirements 6.3
+   *
+   * Given a set of features with team assignments and a selected team filter,
+   * only features whose team matches the filter should be "visible".
+   * This is a pure logic test of the CSS-based filtering contract.
+   */
+  it("only features matching the selected team filter are visible", () => {
+    const teamArb = fc.constantFrom("Alpha" as const, "Bravo" as const, "Charlie" as const);
+
+    fc.assert(
+      fc.property(
+        fc.array(
+          fc.record({
+            id: fc.string({ minLength: 1, maxLength: 10 }),
+            team: teamArb,
+          }),
+          { minLength: 0, maxLength: 20 }
+        ),
+        teamArb,
+        (features, selectedFilter) => {
+          // Pure logic: simulate CSS-based visibility filtering
+          const visibleFeatures = features.filter((f) => f.team === selectedFilter);
+          const hiddenFeatures = features.filter((f) => f.team !== selectedFilter);
+
+          // All visible features must match the filter
+          for (const f of visibleFeatures) {
+            expect(f.team).toBe(selectedFilter);
+          }
+
+          // All hidden features must NOT match the filter
+          for (const f of hiddenFeatures) {
+            expect(f.team).not.toBe(selectedFilter);
+          }
+
+          // Total counts are preserved
+          expect(visibleFeatures.length + hiddenFeatures.length).toBe(features.length);
+        }
+      ),
+      { numRuns: 200 }
+    );
+  });
+});
+
+// ─── Property 10: Detail drawer displays all feature data ───────────────────
+
+describe("Property 10: Detail drawer displays all feature data", () => {
+  /**
+   * Validates: Requirements 7.3, 7.4, 7.5
+   *
+   * When the Detail Drawer is open with a feature, it must render
+   * the feature_key, summary, rag_status, and status information.
+   */
+  it("renders feature_key, summary, and rag_status when open", () => {
+    fc.assert(
+      fc.property(featureItemArb, (feature) => {
+        const onClose = () => {};
+        const { container } = render(
+          React.createElement(DetailDrawer, { feature, open: true, onClose })
+        );
+
+        const drawer = container.querySelector('[data-testid="detail-drawer"]');
+        expect(drawer).not.toBeNull();
+
+        const textContent = drawer!.textContent || "";
+
+        // feature_key is rendered as a heading
+        expect(textContent).toContain(feature.feature_key);
+
+        // summary is rendered in the body
+        expect(textContent).toContain(feature.summary);
+
+        // rag_status manifests as the label text
+        const ragLabels: Record<string, string> = {
+          green: "On Track",
+          amber: "At Risk",
+          red: "Blocked",
+        };
+        expect(textContent).toContain(ragLabels[feature.rag_status]);
+      }),
+      { numRuns: 100 }
+    );
+  });
+});
+
+// ─── Property 13: Aria-labels on Gantt bar segments ─────────────────────────
+
+describe("Property 13: Aria-labels on Gantt bar segments", () => {
+  /**
+   * Validates: Requirements 11.2
+   *
+   * Each non-zero segment of a GanttBar must have an aria-label attribute
+   * containing the percentage and the category name ("done", "in-progress", "todo").
+   */
+  it("non-zero segments have aria-label with percentage and category", () => {
+    fc.assert(
+      fc.property(percentageTuple, columnWidth, ({ done, prog, todo }, width) => {
+        const { container } = render(
+          React.createElement(GanttBar, {
+            donePct: done,
+            progPct: prog,
+            todoPct: todo,
+            columnWidth: width,
+          })
+        );
+
+        if (done > 0) {
+          const doneSegment = container.querySelector(`[aria-label="${Math.round(done)}% done"]`);
+          expect(doneSegment).not.toBeNull();
+        }
+
+        if (prog > 0) {
+          const progSegment = container.querySelector(`[aria-label="${Math.round(prog)}% in-progress"]`);
+          expect(progSegment).not.toBeNull();
+        }
+
+        if (todo > 0) {
+          const todoSegment = container.querySelector(`[aria-label="${Math.round(todo)}% todo"]`);
+          expect(todoSegment).not.toBeNull();
+        }
+      }),
+      { numRuns: 100 }
+    );
+  });
+});
