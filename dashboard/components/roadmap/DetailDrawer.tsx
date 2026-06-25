@@ -442,6 +442,8 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
               text={feature.lodestar_static}
               featureKey={feature.feature_key}
               generatedAt={feature.generated_at}
+              pi={feature.pi_completion?.[0]?.pi_name ?? ""}
+              active={open}
             />
           </div>
         )}
