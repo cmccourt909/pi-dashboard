@@ -9,7 +9,7 @@ from app.api.routers.pis import router as pis_router
 from app.api.routers.features import router as features_router
 from app.api.routers.findings import router as findings_router
 from app.api.routers.upload import router as upload_router
-from app.api.routers.roadmap import router as roadmap_router
+from app.api.routers.roadmap import pi_features_router
 from app.api.routers.enrich import router as enrich_router
 
 # ─── Run migrations on startup ────────────────────────────────────────────────
@@ -50,7 +50,7 @@ app.include_router(pis_router)
 app.include_router(features_router)
 app.include_router(findings_router)
 app.include_router(upload_router)
-app.include_router(roadmap_router)
+app.include_router(pi_features_router)
 app.include_router(enrich_router)
 
 @app.get("/health")

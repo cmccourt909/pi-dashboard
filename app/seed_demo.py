@@ -154,7 +154,13 @@ def seed():
             start_date=datetime(2026, 5, 21),
             end_date=datetime(2026, 7, 30),
         )
-        session.add_all([pi_262, pi_263])
+        pi_264 = ProgramIncrement(
+            org_id=org.id,
+            name="26.4",
+            start_date=datetime(2026, 7, 31),
+            end_date=datetime(2026, 10, 8),
+        )
+        session.add_all([pi_262, pi_263, pi_264])
         session.flush()
 
         # ─── Sprints ─────────────────────────────────────────────────────
@@ -206,6 +212,28 @@ def seed():
                 session.add(sprint)
                 session.flush()
                 sprints_263.append(sprint)
+            sprint_start = sprint_end + timedelta(days=1)
+
+        sprints_264 = []
+        sprint_start = datetime(2026, 7, 31)
+        for i in range(1, 6):
+            sprint_end = sprint_start + timedelta(days=13)
+            state = SprintState.FUTURE.value
+
+            for team in TEAMS:
+                sprint = Sprint(
+                    site_id=site.id,
+                    project_id=projects[team["key"]].id,
+                    jira_id=26400 + i * 10 + list(projects.keys()).index(team["key"]),
+                    name=f"Sprint 26.4.{i}",
+                    state=state,
+                    start_date=sprint_start,
+                    end_date=sprint_end,
+                    pi_id=pi_264.id,
+                )
+                session.add(sprint)
+                session.flush()
+                sprints_264.append(sprint)
             sprint_start = sprint_end + timedelta(days=1)
 
         # ─── Feature Issues (Epics) ──────────────────────────────────────
@@ -382,6 +410,53 @@ def seed():
 
             session.flush()
 
+        # Also add stories for PI 26.4 (planning / future work)
+        for feat in FEATURES[:3]:  # First 3 features span into 26.4
+            team_key = feat["team"]
+            feature_issue = feature_issues[feat["key"]]
+            team_sprints_264_local = [
+                s for s in sprints_264
+                if s.project_id == projects[team_key].id
+            ]
+
+            for i in range(random.randint(3, 6)):
+                story_counter += 1
+                jira_key = f"{team_key}-{400 + story_counter}"
+                sprint = team_sprints_264_local[0]  # Sprint 26.4.1
+
+                status = random.choice(STATUSES_TODO)
+                status_category = "new"
+
+                story = Issue(
+                    site_id=site.id,
+                    project_id=projects[team_key].id,
+                    sprint_id=sprint.id,
+                    jira_key=jira_key,
+                    jira_id=abs(hash(jira_key)) % (10**8),
+                    issue_type=IssueType.STORY.value,
+                    summary=_random_summary(feat["summary"], i),
+                    status=status,
+                    status_category=status_category,
+                    priority=random.choice(PRIORITIES),
+                    assignee=random.choice(ASSIGNEES) if random.random() > 0.3 else None,
+                    story_points=random.choice([1, 2, 3, 5, 8]) if random.random() > 0.3 else None,
+                    created_at=datetime(2026, 7, 20) + timedelta(days=random.randint(0, 10)),
+                    updated_at=datetime(2026, 7, 25) + timedelta(days=random.randint(0, 5)),
+                )
+                session.add(story)
+                session.flush()
+                all_stories.append(story)
+
+                fm = FeatureMembership(
+                    site_id=site.id,
+                    issue_id=story.id,
+                    feature_issue_id=feature_issue.id,
+                    source="feature_link_field",
+                )
+                session.add(fm)
+
+            session.flush()
+
         # ─── Blocking Dependencies ────────────────────────────────────────
         # Add some realistic cross-team blocking relationships
         blocking_pairs = [
@@ -423,11 +498,11 @@ def seed():
 
     print("✓ Demo data seeded successfully!")
     print(f"  Organization: Acme Corp")
-    print(f"  PIs: 26.2, 26.3")
+    print(f"  PIs: 26.2, 26.3, 26.4")
     print(f"  Teams: {', '.join(t['name'] for t in TEAMS)}")
     print(f"  Features: {len(FEATURES)}")
     print(f"  Stories: {story_counter}")
-    print(f"  Sprints: {len(sprints_262) + len(sprints_263)}")
+    print(f"  Sprints: {len(sprints_262) + len(sprints_263) + len(sprints_264)}")
 
 
 if __name__ == "__main__":
