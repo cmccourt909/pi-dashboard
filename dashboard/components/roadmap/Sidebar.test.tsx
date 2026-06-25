@@ -18,6 +18,7 @@ function makeFeature(overrides: Partial<FeatureItem> = {}): FeatureItem {
     is_blocked_by: [],
     sprint_breakdown: [],
     lodestar_static: null,
+    generated_at: null,
     ...overrides,
   };
 }

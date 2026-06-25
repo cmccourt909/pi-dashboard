@@ -91,3 +91,4 @@ class FeatureItemOut(BaseModel):
     is_blocked_by: list[str]
     sprint_breakdown: list[SprintBreakdownOut]
     lodestar_static: Optional[str]
+    generated_at: Optional[str] = None

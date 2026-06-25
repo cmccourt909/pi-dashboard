@@ -438,7 +438,11 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
             </div>
 
             {/* Lodestar AI Panel */}
-            <LodestarPanel text={feature.lodestar_static} />
+            <LodestarPanel
+              text={feature.lodestar_static}
+              featureKey={feature.feature_key}
+              generatedAt={feature.generated_at}
+            />
           </div>
         )}
       </div>

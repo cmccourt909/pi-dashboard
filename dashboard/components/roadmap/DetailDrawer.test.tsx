@@ -26,6 +26,7 @@ const mockFeature: FeatureItem = {
   is_blocked_by: ["TSU-50"],
   sprint_breakdown: [],
   lodestar_static: "Feature is progressing well. Expected to complete in Sprint 3.",
+  generated_at: "2025-01-15T10:30:00Z",
 };
 
 describe("DetailDrawer", () => {

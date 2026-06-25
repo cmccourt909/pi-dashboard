@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.models import (
     Issue, IssueType, FeatureMembership, IssueLink, Sprint,
-    ProgramIncrement, Project,
+    ProgramIncrement, Project, FeatureNarrative,
 )
 from app.api.deps import get_session
 from app.api.schemas import FeatureItemOut, PICompletionOut, SprintBreakdownOut
@@ -103,6 +103,12 @@ def get_pi_features(pi: str, session: Session = Depends(get_session)):
         if story:
             feature_stories.setdefault(m.feature_issue_id, []).append(story)
 
+    # Load feature narratives keyed by feature_issue_id
+    narratives = session.scalars(select(FeatureNarrative)).all()
+    narrative_by_feature_id: dict[int, FeatureNarrative] = {
+        n.feature_issue_id: n for n in narratives
+    }
+
     # Load all issue links for blockers
     links = session.scalars(
         select(IssueLink).where(IssueLink.link_type == "blocks")
@@ -199,6 +205,14 @@ def get_pi_features(pi: str, session: Session = Depends(get_session)):
             sp_total=sp_total,
         )]
 
+        # Narrative (left join via lookup)
+        narrative = narrative_by_feature_id.get(epic.id)
+        lodestar_static = narrative.narrative_text if narrative else None
+        generated_at_str = (
+            narrative.generated_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+            if narrative else None
+        )
+
         results.append(FeatureItemOut(
             feature_key=epic.jira_key,
             summary=epic.summary,
@@ -211,7 +225,8 @@ def get_pi_features(pi: str, session: Session = Depends(get_session)):
             blockers=blockers,
             is_blocked_by=is_blocked_by,
             sprint_breakdown=sprint_breakdown,
-            lodestar_static=None,
+            lodestar_static=lodestar_static,
+            generated_at=generated_at_str,
         ))
 
     return results
