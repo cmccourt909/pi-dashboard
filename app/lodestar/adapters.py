@@ -82,6 +82,8 @@ class AzureOpenAIAdapter(_BaseAdapter):
             temperature=0.3,
         )
         async for chunk in response:
+            if not chunk.choices:
+                continue
             delta = chunk.choices[0].delta.content
             if delta:
                 yield delta
@@ -112,6 +114,8 @@ class OpenAIAdapter(_BaseAdapter):
             temperature=0.3,
         )
         async for chunk in response:
+            if not chunk.choices:
+                continue
             delta = chunk.choices[0].delta.content
             if delta:
                 yield delta
