@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatRelativeTime } from "../../lib/formatRelativeTime";
 import {
   hasStructuredSections,
@@ -69,6 +69,16 @@ export default function LodestarPanel({
     setError(null);
     reset();
   }, [text, generatedAt, reset]);
+
+  // Auto-generate: when the panel mounts with no cached narrative, start streaming.
+  // This restores the previous build's behaviour of auto-generating on drawer open.
+  const hasAutoStarted = useRef(false);
+  useEffect(() => {
+    if (!hasAutoStarted.current && !text && pi && featureKey && state === "idle") {
+      hasAutoStarted.current = true;
+      start(pi, featureKey);
+    }
+  }, [text, pi, featureKey, state, start]);
 
   // Finalize streamed text when the stream completes.
   useEffect(() => {

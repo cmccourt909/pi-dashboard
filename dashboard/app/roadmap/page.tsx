@@ -5,7 +5,7 @@ import type { FeatureItem, Team } from "@/types/roadmap";
 import type { TeamFilter } from "@/components/roadmap/FilterBar";
 import type { PIColumnData } from "@/components/roadmap/GanttHeader";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import AskLodestar from "@/components/AskLodestar";
+import LodestarActions from "@/components/LodestarActions";
 import GanttHeader from "@/components/roadmap/GanttHeader";
 import SummaryStrip from "@/components/roadmap/SummaryStrip";
 import Sidebar from "@/components/roadmap/Sidebar";
@@ -361,7 +361,7 @@ export default function RoadmapPage() {
           {/* Filter bar */}
           <FilterBar activeTeam={activeTeam} onFilterChange={handleFilterChange} />
           {/* Ask Lodestar */}
-          <AskLodestar onClick={() => {}} />
+          <LodestarActions />
         </div>
 
         {/* Summary strip (receives team-filtered features) */}
