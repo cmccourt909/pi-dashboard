@@ -86,6 +86,20 @@ async function proxy(request: NextRequest, params: { path: string[] }) {
       }
     });
 
+    // SSE streams must be forwarded as a readable stream, not buffered
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("text/event-stream") && response.body) {
+      responseHeaders.set("content-type", "text/event-stream");
+      responseHeaders.set("cache-control", "no-cache");
+      responseHeaders.set("connection", "keep-alive");
+      responseHeaders.set("x-accel-buffering", "no");
+      return new NextResponse(response.body as ReadableStream, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: responseHeaders,
+      });
+    }
+
     const body = await response.arrayBuffer();
     return new NextResponse(body, {
       status: response.status,
