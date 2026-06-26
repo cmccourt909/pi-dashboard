@@ -73,7 +73,7 @@ describe("FilterBar", () => {
     const inactivePill = screen.getByRole("button", { name: "All" });
 
     // Active pill should have filled background
-    expect(activePill.style.background).toContain("4f46e5");
+    expect(activePill.style.background).toContain("var(--color-interactive-primary)");
     // Inactive pill should have transparent background
     expect(inactivePill.style.background).toContain("transparent");
   });

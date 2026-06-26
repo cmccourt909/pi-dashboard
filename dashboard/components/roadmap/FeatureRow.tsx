@@ -79,15 +79,19 @@ export default function FeatureRow({
         display: "flex",
         alignItems: "center",
         gap: 8,
+        minHeight: 44,
         padding: "6px 8px",
         cursor: "pointer",
-        borderRadius: 4,
+        borderRadius: "var(--radius-md)",
         transition: "background-color 0.15s ease",
         outline: "none",
       }}
-      // Inline hover/focus styles handled via CSS class in production;
-      // here we rely on the focus-visible browser default plus the outline: none
-      // being overridden by focus-visible styling at the page level.
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = "var(--color-fill-info)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = "transparent";
+      }}
     >
       {/* Gantt progress bar */}
       <div style={{ flex: "0 0 auto" }}>

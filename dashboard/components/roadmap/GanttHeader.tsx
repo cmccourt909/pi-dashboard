@@ -94,7 +94,7 @@ export default function GanttHeader({ columns, columnWidth }: GanttHeaderProps) 
     <div
       style={{
         display: "flex",
-        borderBottom: "1px solid var(--color-border, #e2e8f0)",
+        borderBottom: "1px solid var(--color-border-default)",
         userSelect: "none",
       }}
       role="row"
@@ -112,7 +112,7 @@ export default function GanttHeader({ columns, columnWidth }: GanttHeaderProps) 
               width: columnWidth,
               minWidth: columnWidth,
               position: "relative",
-              borderRight: "1px solid var(--color-border, #e2e8f0)",
+              borderRight: "1px solid var(--color-border-default)",
             }}
             role="columnheader"
             aria-label={`Program Increment ${col.pi.name}`}
@@ -121,12 +121,12 @@ export default function GanttHeader({ columns, columnWidth }: GanttHeaderProps) 
             <div
               style={{
                 padding: "8px 12px",
-                fontSize: 13,
-                fontWeight: 600,
-                color: "var(--color-indigo-900, #1e293b)",
+                fontSize: "var(--font-size-body)",
+                fontWeight: "var(--font-weight-semi)",
+                color: "var(--color-text-primary)",
                 textAlign: "center",
-                borderBottom: "1px solid var(--color-border, #e2e8f0)",
-                background: "var(--color-indigo-50, #f8fafc)",
+                borderBottom: "1px solid var(--color-border-default)",
+                background: "var(--color-fill-neutral)",
                 letterSpacing: "0.02em",
               }}
             >
@@ -138,8 +138,8 @@ export default function GanttHeader({ columns, columnWidth }: GanttHeaderProps) 
               style={{
                 position: "relative",
                 height: 22,
-                borderBottom: "1px solid var(--color-border, #e2e8f0)",
-                background: "#fff",
+                borderBottom: "1px solid var(--color-border-default)",
+                background: "var(--color-surface-card)",
               }}
             >
               {monthLabels.map((m) => (
@@ -149,9 +149,9 @@ export default function GanttHeader({ columns, columnWidth }: GanttHeaderProps) 
                     position: "absolute",
                     left: `${m.leftPct}%`,
                     top: 4,
-                    fontSize: 10,
-                    fontWeight: 500,
-                    color: "var(--color-text-muted, #64748b)",
+                    fontSize: "var(--font-size-caption)",
+                    fontWeight: "var(--font-weight-medium)",
+                    color: "var(--color-text-secondary)",
                     textTransform: "uppercase",
                     letterSpacing: "0.06em",
                     whiteSpace: "nowrap",
@@ -168,7 +168,7 @@ export default function GanttHeader({ columns, columnWidth }: GanttHeaderProps) 
               style={{
                 position: "relative",
                 height: 28,
-                background: "#fff",
+                background: "var(--color-surface-card)",
               }}
             >
               {col.sprints.map((sprint) => {
@@ -194,10 +194,10 @@ export default function GanttHeader({ columns, columnWidth }: GanttHeaderProps) 
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: 10,
-                      fontWeight: 500,
-                      color: "var(--color-text-muted, #64748b)",
-                      background: "var(--color-indigo-100, #e8edf5)",
+                      fontSize: "var(--font-size-caption)",
+                      fontWeight: "var(--font-weight-medium)",
+                      color: "var(--color-text-secondary)",
+                      background: "var(--color-fill-info)",
                       borderRadius: 3,
                       overflow: "hidden",
                       textOverflow: "ellipsis",

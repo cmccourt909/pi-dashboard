@@ -83,7 +83,7 @@ export default function TodayLine({
         bottom: 0,
         left: `${position}px`,
         width: "2px",
-        backgroundColor: "#E8622A",
+        backgroundColor: "var(--color-brand-coral)",
         pointerEvents: "none",
         zIndex: 10,
       }}

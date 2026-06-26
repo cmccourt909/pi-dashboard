@@ -76,12 +76,14 @@ export default function SummaryStrip({ features }: SummaryStripProps) {
 
   return (
     <div
+      className="kpi-strip"
       style={{
-        display: "flex",
-        gap: 16,
-        padding: "12px 16px",
-        borderBottom: "1px solid var(--color-border, #e2e8f0)",
-        background: "var(--color-indigo-50, #f8fafc)",
+        display: "grid",
+        gridTemplateColumns: "repeat(5, 1fr)",
+        gap: "var(--space-4)",
+        padding: "var(--space-3) var(--space-4)",
+        borderBottom: "1px solid var(--color-border-default)",
+        background: "var(--color-fill-neutral)",
       }}
       role="region"
       aria-label="Program KPI summary"
@@ -89,20 +91,21 @@ export default function SummaryStrip({ features }: SummaryStripProps) {
       {cells.map((cell) => (
         <div
           key={cell.label}
+          className="kpi-cell"
           style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            padding: "8px 16px",
-            borderRadius: 6,
+            padding: "var(--space-2) var(--space-4)",
+            borderRadius: "var(--radius-md)",
             minWidth: 100,
             background: getBackground(cell.variant),
           }}
         >
           <span
             style={{
-              fontSize: 22,
-              fontWeight: 700,
+              fontSize: "var(--font-size-h2)",
+              fontWeight: "var(--font-weight-bold)",
               lineHeight: 1.2,
               color: getValueColor(cell.variant),
             }}
@@ -111,8 +114,8 @@ export default function SummaryStrip({ features }: SummaryStripProps) {
           </span>
           <span
             style={{
-              fontSize: 11,
-              fontWeight: 500,
+              fontSize: "var(--font-size-label)",
+              fontWeight: "var(--font-weight-medium)",
               color: getLabelColor(cell.variant),
               textTransform: "uppercase",
               letterSpacing: "0.04em",
@@ -130,32 +133,32 @@ export default function SummaryStrip({ features }: SummaryStripProps) {
 function getBackground(variant?: "default" | "at-risk" | "blocked"): string {
   switch (variant) {
     case "at-risk":
-      return "rgba(245, 158, 11, 0.08)";
+      return "var(--color-fill-warning)";
     case "blocked":
-      return "rgba(239, 68, 68, 0.08)";
+      return "var(--color-fill-danger)";
     default:
-      return "#fff";
+      return "var(--color-surface-card)";
   }
 }
 
 function getValueColor(variant?: "default" | "at-risk" | "blocked"): string {
   switch (variant) {
     case "at-risk":
-      return "#b45309";
+      return "var(--color-status-warning)";
     case "blocked":
-      return "#dc2626";
+      return "var(--color-status-danger)";
     default:
-      return "var(--color-indigo-900, #1e293b)";
+      return "var(--color-text-primary)";
   }
 }
 
 function getLabelColor(variant?: "default" | "at-risk" | "blocked"): string {
   switch (variant) {
     case "at-risk":
-      return "#92400e";
+      return "var(--color-status-warning)";
     case "blocked":
-      return "#991b1b";
+      return "var(--color-status-danger)";
     default:
-      return "var(--color-text-muted, #64748b)";
+      return "var(--color-text-secondary)";
   }
 }

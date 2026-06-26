@@ -21,14 +21,13 @@ interface DetailDrawerProps {
   onClose: () => void;
 }
 
-const DRAWER_WIDTH = 300;
 const ANIMATION_DURATION_MS = 200;
 
-/** RAG status badge colors */
+/** RAG status badge colors using Northline semantic tokens */
 const RAG_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  green: { bg: "#dcfce7", text: "#166534", label: "On Track" },
-  amber: { bg: "#fef3c7", text: "#92400e", label: "At Risk" },
-  red: { bg: "#fee2e2", text: "#991b1b", label: "Blocked" },
+  green: { bg: "var(--color-fill-success)", text: "var(--color-status-success)", label: "On Track" },
+  amber: { bg: "var(--color-fill-warning)", text: "var(--color-status-warning)", label: "At Risk" },
+  red: { bg: "var(--color-fill-danger)", text: "var(--color-status-danger)", label: "Blocked" },
 };
 
 export default function DetailDrawer({ feature, open, onClose }: DetailDrawerProps) {
@@ -117,7 +116,7 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
           position: "fixed",
           inset: 0,
           zIndex: 998,
-          background: open ? "rgba(0, 0, 0, 0.2)" : "transparent",
+          background: open ? "var(--color-surface-overlay)" : "transparent",
           pointerEvents: open ? "auto" : "none",
           transition: `background ${ANIMATION_DURATION_MS}ms ease`,
         }}
@@ -132,15 +131,15 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
             : "Feature details"
         }
         data-testid="detail-drawer"
+        className="detail-drawer"
         style={{
           position: "fixed",
           top: 0,
           right: 0,
           bottom: 0,
-          width: DRAWER_WIDTH,
           zIndex: 999,
-          background: "#ffffff",
-          boxShadow: "-4px 0 12px rgba(0, 0, 0, 0.1)",
+          background: "var(--color-surface-card)",
+          boxShadow: "var(--shadow-drawer)",
           transform: open ? "translateX(0)" : "translateX(100%)",
           transition: `transform ${ANIMATION_DURATION_MS}ms ease`,
           display: "flex",
@@ -155,7 +154,7 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
               flexDirection: "column",
               height: "100%",
               overflowY: "auto",
-              padding: 16,
+              padding: "var(--space-5)",
             }}
           >
             {/* Header: Feature key + close button */}
@@ -164,19 +163,19 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "flex-start",
-                marginBottom: 16,
+                marginBottom: "var(--space-4)",
               }}
             >
               <h2
                 style={{
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: "#1e293b",
+                  fontSize: "var(--font-size-h2)",
+                  fontWeight: "var(--font-weight-bold)",
+                  color: "var(--color-text-primary)",
                   margin: 0,
-                  lineHeight: 1.3,
+                  lineHeight: "var(--line-height-snug)",
                   wordBreak: "break-word",
                   flex: 1,
-                  marginRight: 8,
+                  marginRight: "var(--space-2)",
                 }}
               >
                 {feature.feature_key}
@@ -190,18 +189,18 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  fontSize: 18,
-                  color: "#64748b",
+                  fontSize: "var(--font-size-h3)",
+                  color: "var(--color-text-secondary)",
                   padding: "2px 6px",
-                  borderRadius: 4,
+                  borderRadius: "var(--radius-md)",
                   lineHeight: 1,
                   flexShrink: 0,
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "#f1f5f9";
+                  (e.currentTarget as HTMLButtonElement).style.background = "var(--color-fill-info)";
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "none";
+                  (e.currentTarget as HTMLButtonElement).style.background = "transparent";
                 }}
               >
                 ✕
@@ -209,27 +208,27 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
             </div>
 
             {/* Summary + assignee */}
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: "var(--space-3)" }}>
               <p
                 style={{
-                  fontSize: 13,
-                  color: "#334155",
+                  fontSize: "var(--font-size-body)",
+                  color: "var(--color-text-primary)",
                   margin: 0,
-                  lineHeight: 1.4,
-                  marginBottom: 6,
+                  lineHeight: "var(--line-height-snug)",
+                  marginBottom: "var(--space-1)",
                 }}
               >
                 {feature.summary}
               </p>
               <p
                 style={{
-                  fontSize: 12,
-                  color: "#64748b",
+                  fontSize: "var(--font-size-caption)",
+                  color: "var(--color-text-secondary)",
                   margin: 0,
                 }}
               >
                 Assignee:{" "}
-                <span style={{ color: "#334155", fontWeight: 500 }}>
+                <span style={{ color: "var(--color-text-primary)", fontWeight: "var(--font-weight-medium)" }}>
                   {feature.assignee || "Unassigned"}
                 </span>
               </p>
@@ -242,9 +241,9 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
                   style={{
                     display: "inline-block",
                     padding: "3px 10px",
-                    borderRadius: 9999,
-                    fontSize: 11,
-                    fontWeight: 600,
+                    borderRadius: "var(--radius-pill)",
+                    fontSize: "var(--font-size-label)",
+                    fontWeight: "var(--font-weight-semi)",
                     background: ragInfo.bg,
                     color: ragInfo.text,
                   }}
@@ -255,16 +254,16 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
             )}
 
             {/* Progress bar */}
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: "var(--space-4)" }}>
               <h3
                 style={{
-                  fontSize: 12,
-                  fontWeight: 600,
+                  fontSize: "var(--font-size-label)",
+                  fontWeight: "var(--font-weight-semi)",
                   textTransform: "uppercase",
                   letterSpacing: "0.05em",
-                  color: "#64748b",
+                  color: "var(--color-text-secondary)",
                   margin: 0,
-                  marginBottom: 8,
+                  marginBottom: "var(--space-2)",
                 }}
               >
                 Progress
@@ -284,7 +283,7 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
                     style={{
                       width: `${donePct}%`,
                       height: "100%",
-                      backgroundColor: "#0d9488",
+                      backgroundColor: "var(--color-status-success)",
                     }}
                   />
                 )}
@@ -294,7 +293,7 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
                     style={{
                       width: `${progPct}%`,
                       height: "100%",
-                      backgroundColor: "rgba(59, 130, 246, 0.6)",
+                      backgroundColor: "var(--color-status-warning)",
                     }}
                   />
                 )}
@@ -304,7 +303,7 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
                     style={{
                       width: `${todoPct}%`,
                       height: "100%",
-                      backgroundColor: "rgba(156, 163, 175, 0.4)",
+                      backgroundColor: "var(--color-brand-slate)",
                     }}
                   />
                 )}
@@ -313,9 +312,9 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  marginTop: 4,
-                  fontSize: 11,
-                  color: "#64748b",
+                  marginTop: "var(--space-1)",
+                  fontSize: "var(--font-size-label)",
+                  color: "var(--color-text-secondary)",
                 }}
               >
                 <span>Done {Math.round(donePct)}%</span>
@@ -325,30 +324,30 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
             </div>
 
             {/* Dependency section */}
-            <div id="drawer-dependencies" style={{ marginBottom: 16 }}>
+            <div id="drawer-dependencies" style={{ marginBottom: "var(--space-4)" }}>
               <h3
                 style={{
-                  fontSize: 12,
-                  fontWeight: 600,
+                  fontSize: "var(--font-size-label)",
+                  fontWeight: "var(--font-weight-semi)",
                   textTransform: "uppercase",
                   letterSpacing: "0.05em",
-                  color: "#64748b",
+                  color: "var(--color-text-secondary)",
                   margin: 0,
-                  marginBottom: 8,
+                  marginBottom: "var(--space-2)",
                 }}
               >
                 Dependencies
               </h3>
 
               {/* Blocks list */}
-              <div style={{ marginBottom: 10 }}>
+              <div style={{ marginBottom: "var(--space-3)" }}>
                 <p
                   style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "#475569",
+                    fontSize: "var(--font-size-label)",
+                    fontWeight: "var(--font-weight-semi)",
+                    color: "var(--color-text-secondary)",
                     margin: 0,
-                    marginBottom: 4,
+                    marginBottom: "var(--space-1)",
                   }}
                 >
                   Blocks
@@ -365,8 +364,8 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
                       <li
                         key={key}
                         style={{
-                          fontSize: 12,
-                          color: "#334155",
+                          fontSize: "var(--font-size-caption)",
+                          color: "var(--color-text-primary)",
                           padding: "2px 0",
                         }}
                       >
@@ -377,8 +376,8 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
                 ) : (
                   <p
                     style={{
-                      fontSize: 12,
-                      color: "#94a3b8",
+                      fontSize: "var(--font-size-caption)",
+                      color: "var(--color-text-tertiary)",
                       margin: 0,
                       fontStyle: "italic",
                     }}
@@ -392,11 +391,11 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
               <div>
                 <p
                   style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "#475569",
+                    fontSize: "var(--font-size-label)",
+                    fontWeight: "var(--font-weight-semi)",
+                    color: "var(--color-text-secondary)",
                     margin: 0,
-                    marginBottom: 4,
+                    marginBottom: "var(--space-1)",
                   }}
                 >
                   Blocked By
@@ -413,8 +412,8 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
                       <li
                         key={key}
                         style={{
-                          fontSize: 12,
-                          color: "#334155",
+                          fontSize: "var(--font-size-caption)",
+                          color: "var(--color-text-primary)",
                           padding: "2px 0",
                         }}
                       >
@@ -425,8 +424,8 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
                 ) : (
                   <p
                     style={{
-                      fontSize: 12,
-                      color: "#94a3b8",
+                      fontSize: "var(--font-size-caption)",
+                      color: "var(--color-text-tertiary)",
                       margin: 0,
                       fontStyle: "italic",
                     }}
@@ -442,6 +441,7 @@ export default function DetailDrawer({ feature, open, onClose }: DetailDrawerPro
               text={feature.lodestar_static}
               featureKey={feature.feature_key}
               generatedAt={feature.generated_at}
+              pi={feature.pi_completion[0]?.pi_name ?? null}
             />
           </div>
         )}

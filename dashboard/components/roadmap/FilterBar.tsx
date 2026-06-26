@@ -58,20 +58,21 @@ export default function FilterBar({ activeTeam, onFilterChange }: FilterBarProps
               aria-pressed={isActive}
               onClick={() => onFilterChange(team)}
               style={{
+                minHeight: 44,
                 padding: "4px 14px",
-                borderRadius: 9999,
+                borderRadius: "var(--radius-pill)",
                 border: "1px solid",
                 borderColor: isActive
-                  ? "var(--filter-pill-active-border, #4f46e5)"
-                  : "var(--filter-pill-border, #cbd5e1)",
+                  ? "var(--color-interactive-primary)"
+                  : "var(--color-border-default)",
                 background: isActive
-                  ? "var(--filter-pill-active-bg, #4f46e5)"
-                  : "var(--filter-pill-bg, transparent)",
+                  ? "var(--color-interactive-primary)"
+                  : "transparent",
                 color: isActive
-                  ? "var(--filter-pill-active-text, #ffffff)"
-                  : "var(--filter-pill-text, #334155)",
-                fontSize: 13,
-                fontWeight: 500,
+                  ? "var(--color-text-inverse)"
+                  : "var(--color-text-primary)",
+                fontSize: "var(--font-size-body)",
+                fontWeight: "var(--font-weight-medium)",
                 cursor: "pointer",
                 transition: "background 100ms ease, border-color 100ms ease",
                 lineHeight: "20px",
@@ -79,13 +80,13 @@ export default function FilterBar({ activeTeam, onFilterChange }: FilterBarProps
               onMouseEnter={(e) => {
                 if (!isActive) {
                   (e.currentTarget as HTMLButtonElement).style.background =
-                    "var(--filter-pill-hover-bg, #f1f5f9)";
+                    "var(--color-fill-info)";
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isActive) {
                   (e.currentTarget as HTMLButtonElement).style.background =
-                    "var(--filter-pill-bg, transparent)";
+                    "var(--color-surface-card)";
                 }
               }}
             >

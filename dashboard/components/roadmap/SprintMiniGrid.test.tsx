@@ -49,8 +49,8 @@ describe("SprintMiniGrid", () => {
     render(<SprintMiniGrid sprints={activeSprints} team="Alpha" />);
     const grid = screen.getByTestId("sprint-mini-grid");
     const activeBar = grid.children[0] as HTMLElement;
-    // Alpha color #6366f1 at 55% opacity => rgba(99, 102, 241, 0.55)
-    expect(activeBar.style.backgroundColor).toBe("rgba(99, 102, 241, 0.55)");
+    // Alpha color #202670 at 55% opacity => rgba(32, 38, 112, 0.55)
+    expect(activeBar.style.backgroundColor).toBe("rgba(32, 38, 112, 0.55)");
   });
 
   it("applies neutral color for future sprint with stories", () => {
@@ -61,7 +61,7 @@ describe("SprintMiniGrid", () => {
     const grid = screen.getByTestId("sprint-mini-grid");
     const futureBar = grid.children[0] as HTMLElement;
     // jsdom normalizes hex to rgb
-    expect(futureBar.style.backgroundColor).toBe("rgb(232, 230, 224)");
+    expect(futureBar.style.backgroundColor).toBe("rgb(242, 244, 246)");
   });
 
   it("applies solid team color for closed sprint with stories", () => {
@@ -71,8 +71,8 @@ describe("SprintMiniGrid", () => {
     render(<SprintMiniGrid sprints={closedSprints} team="Charlie" />);
     const grid = screen.getByTestId("sprint-mini-grid");
     const closedBar = grid.children[0] as HTMLElement;
-    // Charlie color #d97706 → rgb(217, 119, 6)
-    expect(closedBar.style.backgroundColor).toBe("rgb(217, 119, 6)");
+    // Charlie color #0F6038 → rgb(15, 96, 56)
+    expect(closedBar.style.backgroundColor).toBe("rgb(15, 96, 56)");
   });
 
   it("applies diagonal hatch pattern when sprint has no stories", () => {

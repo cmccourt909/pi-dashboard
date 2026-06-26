@@ -216,11 +216,11 @@ describe("DetailDrawer", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("has a 300px width", () => {
+  it("uses the responsive detail-drawer class", () => {
     render(<DetailDrawer feature={mockFeature} open={true} onClose={vi.fn()} />);
 
     const drawer = screen.getByTestId("detail-drawer");
-    expect(drawer).toHaveStyle({ width: "300px" });
+    expect(drawer).toHaveClass("detail-drawer");
   });
 
   it("has 200ms transition duration", () => {
