@@ -5,6 +5,7 @@ import type { FeatureItem, Team } from "@/types/roadmap";
 import type { TeamFilter } from "@/components/roadmap/FilterBar";
 import type { PIColumnData } from "@/components/roadmap/GanttHeader";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import AskLodestar from "@/components/AskLodestar";
 import GanttHeader from "@/components/roadmap/GanttHeader";
 import SummaryStrip from "@/components/roadmap/SummaryStrip";
 import Sidebar from "@/components/roadmap/Sidebar";
@@ -13,6 +14,7 @@ import TeamGroup from "@/components/roadmap/TeamGroup";
 import FeatureRow from "@/components/roadmap/FeatureRow";
 import DetailDrawer from "@/components/roadmap/DetailDrawer";
 import TodayLine from "@/components/roadmap/TodayLine";
+import RoadmapTableView from "@/components/roadmap/RoadmapTableView";
 
 /**
  * RoadmapPage — the top-level page component for the WaypointPI Program Roadmap.
@@ -215,8 +217,8 @@ export default function RoadmapPage() {
           alignItems: "center",
           justifyContent: "center",
           minHeight: 300,
-          fontSize: 14,
-          color: "#64748b",
+          fontSize: "var(--font-size-body)",
+          color: "var(--color-text-secondary)",
         }}
       >
         Loading roadmap…
@@ -236,33 +238,33 @@ export default function RoadmapPage() {
           justifyContent: "center",
           minHeight: 200,
           gap: 12,
-          padding: 24,
+          padding: "var(--space-6)",
         }}
       >
         <div
           style={{
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            borderRadius: 6,
-            padding: "16px 24px",
+            background: "var(--color-fill-danger)",
+            border: "1px solid var(--color-status-danger)",
+            borderRadius: "var(--radius-md)",
+            padding: "var(--space-4) var(--space-6)",
             textAlign: "center",
             maxWidth: 500,
           }}
         >
-          <p style={{ fontSize: 14, color: "#991b1b", margin: 0, marginBottom: 12 }}>
+          <p style={{ fontSize: "var(--font-size-body)", color: "var(--color-status-danger)", margin: 0, marginBottom: "var(--space-3)" }}>
             {error}
           </p>
           <button
             type="button"
             onClick={fetchData}
             style={{
-              padding: "6px 16px",
-              fontSize: 13,
-              fontWeight: 600,
-              border: "1px solid #e2e8f0",
-              borderRadius: 4,
-              background: "#fff",
-              color: "#1e293b",
+              padding: "var(--space-2) var(--space-4)",
+              fontSize: "var(--font-size-body)",
+              fontWeight: "var(--font-weight-semi)",
+              border: "1px solid var(--color-border-default)",
+              borderRadius: "var(--radius-md)",
+              background: "var(--color-surface-card)",
+              color: "var(--color-text-primary)",
               cursor: "pointer",
             }}
           >
@@ -282,8 +284,8 @@ export default function RoadmapPage() {
           alignItems: "center",
           justifyContent: "center",
           minHeight: 200,
-          fontSize: 14,
-          color: "#64748b",
+          fontSize: "var(--font-size-body)",
+          color: "var(--color-text-secondary)",
         }}
       >
         No features found for this PI
@@ -338,10 +340,10 @@ export default function RoadmapPage() {
         {Object.values(grouped).every((arr) => arr.length === 0) && (
           <div
             style={{
-              padding: "24px 12px",
+              padding: "var(--space-6) var(--space-3)",
               textAlign: "center",
-              fontSize: 13,
-              color: "#94a3b8",
+              fontSize: "var(--font-size-body)",
+              color: "var(--color-text-tertiary)",
             }}
           >
             No features found for this PI
@@ -355,42 +357,53 @@ export default function RoadmapPage() {
   return (
     <ErrorBoundary>
       <div id="roadmap-main-content">
-        {/* Filter bar */}
-        <FilterBar activeTeam={activeTeam} onFilterChange={handleFilterChange} />
+        <div className="roadmap-controls" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-4)" }}>
+          {/* Filter bar */}
+          <FilterBar activeTeam={activeTeam} onFilterChange={handleFilterChange} />
+          {/* Ask Lodestar */}
+          <AskLodestar onClick={() => {}} />
+        </div>
 
         {/* Summary strip (receives team-filtered features) */}
         <SummaryStrip features={filteredFeatures} />
 
-        {/* Gantt header */}
-        <GanttHeader columns={ganttColumns} columnWidth={PI_COLUMN_WIDTH} />
+        {/* Timeline / Table toggle */}
+        <RoadmapTableView
+          timelineContent={
+            <>
+              {/* Gantt header */}
+              <GanttHeader columns={ganttColumns} columnWidth={PI_COLUMN_WIDTH} />
 
-        {/* Horizontal scroll container: Sidebar | PI 26.2 | PI 26.3 */}
-        <div
-          style={{
-            display: "flex",
-            overflowX: "auto",
-            minWidth: 0,
-          }}
-        >
-          {/* Sidebar */}
-          <Sidebar
-            features={allFeatures}
-            activeTeam={activeTeam}
-            onFeatureClick={handleFeatureSelect}
-          />
+              {/* Horizontal scroll container: Sidebar | PI 26.2 | PI 26.3 */}
+              <div
+                style={{
+                  display: "flex",
+                  overflowX: "auto",
+                  minWidth: 0,
+                }}
+              >
+                {/* Sidebar */}
+                <Sidebar
+                  features={allFeatures}
+                  activeTeam={activeTeam}
+                  onFeatureClick={handleFeatureSelect}
+                />
 
-          {/* PI columns — one per PI from the database */}
-          {piData.map((pi, idx) => (
-            <React.Fragment key={pi.name}>
-              {renderPIColumn(
-                pi.name,
-                groupedByPI[idx] ?? { Alpha: [], Bravo: [], Charlie: [] },
-                new Date(pi.start_date),
-                new Date(pi.end_date)
-              )}
-            </React.Fragment>
-          ))}
-        </div>
+                {/* PI columns — one per PI from the database */}
+                {piData.map((pi, idx) => (
+                  <React.Fragment key={pi.name}>
+                    {renderPIColumn(
+                      pi.name,
+                      groupedByPI[idx] ?? { Alpha: [], Bravo: [], Charlie: [] },
+                      new Date(pi.start_date),
+                      new Date(pi.end_date)
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </>
+          }
+        />
       </div>
 
       {/* Detail Drawer (overlays from right) */}
@@ -405,41 +418,38 @@ export default function RoadmapPage() {
         dangerouslySetInnerHTML={{
           __html: `
             /* ──── Focus-visible indicators for ALL interactive elements ──── */
-            [data-testid="feature-row"]:hover {
-              background-color: #f8fafc;
-            }
             [data-testid="feature-row"]:focus-visible {
-              outline: 2px solid #4f46e5;
+              outline: 2px solid var(--color-interactive-primary);
               outline-offset: -2px;
             }
 
             /* FilterBar pill buttons */
             [role="toolbar"] button:focus-visible {
-              outline: 2px solid #4f46e5;
+              outline: 2px solid var(--color-interactive-primary);
               outline-offset: 2px;
             }
 
             /* Sidebar feature labels */
             [data-testid="sidebar"] [role="button"]:focus-visible {
-              outline: 2px solid #4f46e5;
+              outline: 2px solid var(--color-interactive-primary);
               outline-offset: -2px;
             }
 
             /* TeamGroup header buttons */
             .team-group > button:focus-visible {
-              outline: 2px solid #4f46e5;
+              outline: 2px solid var(--color-interactive-primary);
               outline-offset: -2px;
             }
 
             /* Detail drawer close button */
             [data-testid="detail-drawer"] button:focus-visible {
-              outline: 2px solid #4f46e5;
+              outline: 2px solid var(--color-interactive-primary);
               outline-offset: 2px;
             }
 
             /* Retry button focus */
             [role="alert"] button:focus-visible {
-              outline: 2px solid #4f46e5;
+              outline: 2px solid var(--color-interactive-primary);
               outline-offset: 2px;
             }
 

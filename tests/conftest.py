@@ -5,8 +5,9 @@ import os
 import tempfile
 
 # MUST be set before any app imports
-# Use a writable path for SQLite test database
-os.environ["DB_URL"] = "sqlite:///app.db"
+# Use a separate test database so we don't clobber the dev app.db
+TEST_DB_PATH = os.path.join(os.path.dirname(__file__), "test_app.db")
+os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
 os.environ.setdefault("UPLOAD_API_KEY", "test-key-123")
 os.environ["SKIP_STARTUP_MIGRATIONS"] = "1"
 
@@ -17,14 +18,19 @@ from sqlalchemy.orm import sessionmaker
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_db():
-    """Create test database schema once for the session."""
+    """Create a fresh test database schema once for the session."""
     from app.models import Base, get_engine
+    # Remove any existing test DB so create_all builds the latest schema
+    try:
+        os.remove(TEST_DB_PATH)
+    except OSError:
+        pass
     eng = get_engine()
     Base.metadata.create_all(eng)
     yield eng
     # Cleanup
     try:
-        os.remove("app.db")
+        os.remove(TEST_DB_PATH)
     except OSError:
         pass
 

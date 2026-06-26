@@ -1,288 +1,285 @@
 "use client";
 
-// dashboard/components/roadmap/LodestarPanel.tsx — Phase 2 (T2.4–T2.7)
-//
-// Replaces Phase 1 static display with live SSE streaming.
-// Phase 1 props (text, featureKey, generatedAt) preserved for backward
-// compatibility; Phase 2 adds pi and active.
-//
-// Four visual states: idle → streaming → complete | error
-// Styling matches existing inline-style pattern in the codebase.
-
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useLodestarStream } from "./hooks/useLodestarStream";
+import { useEffect, useState } from "react";
 import { formatRelativeTime } from "../../lib/formatRelativeTime";
+import {
+  hasStructuredSections,
+  NarrativeSections,
+  parseSections,
+} from "./parseSections";
+import { useLodestarStream } from "./useLodestarStream";
+
+/**
+ * LodestarPanel displays AI-generated delivery narrative text within the Detail Drawer.
+ *
+ * Supports:
+ *   - Rendering cached plain-text or structured narratives
+ *   - On-demand SSE streaming regeneration via the Lodestar endpoint
+ *   - Structured rendering of Delivery Status / Risks & Blockers / Recommended Actions
+ *
+ * Requirements: 7.6, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1, 10.3, 10.4, 10.6
+ */
 
 interface LodestarPanelProps {
-  // Phase 1 props (unchanged — DetailDrawer passes these)
   text: string | null;
   featureKey: string;
   generatedAt?: string | null;
-  // Phase 2 additions
-  pi: string;
-  active: boolean;
+  pi?: string | null;
 }
 
-// ---------------------------------------------------------------------------
-// Cursor animation element
-// aria-hidden — invisible to screen readers (R18.2)
-// Hidden via CSS when prefers-reduced-motion is active (R18.3)
-// ---------------------------------------------------------------------------
-function CursorAnimation() {
-  return (
-    <span
-      aria-hidden="true"
-      className="lodestar-cursor"
-      style={{
-        display: "inline-block",
-        width: "2px",
-        height: "1em",
-        backgroundColor: "#E8735A",
-        marginLeft: "2px",
-        verticalAlign: "text-bottom",
-        animation: "lodestar-blink 1s step-end infinite",
-      }}
-    />
-  );
-}
+const SECTION_STYLES: Record<keyof NarrativeSections, { border: string; icon: string }> = {
+  deliveryStatus: {
+    border: "var(--color-status-success)",
+    icon: "●",
+  },
+  risksAndBlockers: {
+    border: "var(--color-status-warning)",
+    icon: "⚠",
+  },
+  recommendedActions: {
+    border: "var(--color-interactive-secondary)",
+    icon: "→",
+  },
+};
 
-// ---------------------------------------------------------------------------
-// LodestarPanel
-// ---------------------------------------------------------------------------
+const SECTION_TITLES: Record<keyof NarrativeSections, string> = {
+  deliveryStatus: "Delivery Status",
+  risksAndBlockers: "Risks & Blockers",
+  recommendedActions: "Recommended Actions",
+};
+
 export default function LodestarPanel({
-  text: staticFallback,
+  text,
   featureKey,
   generatedAt,
   pi,
-  active,
 }: LodestarPanelProps) {
-  const { status, text, promptVersion, error, retry, cancel } =
-    useLodestarStream(pi, featureKey, active);
+  const [narrativeText, setNarrativeText] = useState<string | null>(text);
+  const [timestamp, setTimestamp] = useState<string | null>(
+    generatedAt ?? null
+  );
+  const [error, setError] = useState<string | null>(null);
 
-  // Copy-to-clipboard
-  const [copied, setCopied] = useState(false);
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { state, text: streamedText, error: streamError, start, reset } = useLodestarStream();
 
-  const handleCopy = useCallback(() => {
-    if (!text) return;
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
-      copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
-    });
-  }, [text]);
-
+  // Sync parent-provided text when it changes (e.g., drawer reopens).
   useEffect(() => {
-    return () => {
-      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
-    };
-  }, []);
+    setNarrativeText(text);
+    setTimestamp(generatedAt ?? null);
+    setError(null);
+    reset();
+  }, [text, generatedAt, reset]);
 
-  const relativeTime = formatRelativeTime(generatedAt ?? null);
+  // Finalize streamed text when the stream completes.
+  useEffect(() => {
+    if (state === "complete" && streamedText) {
+      setNarrativeText(streamedText);
+      setTimestamp(new Date().toISOString());
+    }
+  }, [state, streamedText]);
 
-  // Shared section container style — matches existing DetailDrawer section pattern
-  const sectionStyle: React.CSSProperties = {
-    padding: "12px 0",
-    borderTop: "1px solid #e2e8f0",
-  };
+  // Surface stream errors.
+  useEffect(() => {
+    if (streamError) {
+      setError(streamError);
+    }
+  }, [streamError]);
 
-  const headerRowStyle: React.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  };
+  const isLoading = state === "loading" || state === "streaming";
 
-  const sectionTitleStyle: React.CSSProperties = {
-    fontSize: 12,
-    fontWeight: 600,
-    textTransform: "uppercase",
-    letterSpacing: "0.05em",
-    color: "#64748b",
-    margin: 0,
-  };
+  function handleRegenerate() {
+    setError(null);
+    const piName = pi ?? "26.2";
+    start(piName, featureKey);
+  }
 
-  const textStyle: React.CSSProperties = {
-    fontSize: 13,
-    lineHeight: 1.5,
-    color: "#334155",
-    margin: 0,
-    whiteSpace: "pre-wrap",
-  };
+  const relativeTime = formatRelativeTime(timestamp);
 
-  const btnBase: React.CSSProperties = {
-    fontSize: 11,
-    padding: "4px 10px",
-    borderRadius: 4,
-    border: "1px solid #cbd5e1",
-    background: "#ffffff",
-    color: "#475569",
-    cursor: "pointer",
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 4,
-  };
+  const displayText = state === "streaming" || state === "complete"
+    ? streamedText || narrativeText
+    : narrativeText;
+
+  const sections = displayText ? parseSections(displayText) : null;
+  const structured = displayText ? hasStructuredSections(displayText) : false;
 
   return (
-    <div role="region" aria-label="Lodestar Analysis" style={sectionStyle}>
-      {/* Keyframes + reduced-motion suppression */}
-      <style>{`
-        @keyframes lodestar-blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .lodestar-cursor { display: none !important; }
-        }
-      `}</style>
-
-      {/* Section header */}
-      <div style={headerRowStyle}>
-        <h4 style={sectionTitleStyle}>Lodestar Analysis</h4>
-
-        {/* Contextual action button */}
-        {status === "streaming" && (
-          <button
-            style={{ ...btnBase, color: "#94a3b8", borderColor: "#e2e8f0" }}
-            onClick={cancel}
-            aria-label="Cancel Lodestar narrative generation"
-          >
-            Cancel
-          </button>
-        )}
-        {status === "complete" && (
-          <button
-            style={btnBase}
-            onClick={handleCopy}
-            aria-label={
-              copied ? "Copied to clipboard" : "Copy narrative to clipboard"
-            }
-          >
-            {copied ? (
-              <span aria-live="polite" style={{ color: "#0d9488" }}>
-                Copied
-              </span>
-            ) : (
-              "Copy"
-            )}
-          </button>
-        )}
-        {status === "error" && (
-          <button
-            style={btnBase}
-            onClick={retry}
-            aria-label="Retry Lodestar narrative generation"
-          >
-            Retry
-          </button>
-        )}
+    <div
+      role="region"
+      aria-label="Lodestar Analysis"
+      style={{
+        padding: "12px 0",
+        borderTop: "1px solid var(--color-border-default)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 8,
+        }}
+      >
+        <h4
+          style={{
+            fontSize: "var(--font-size-label)",
+            fontWeight: "var(--font-weight-semi)",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            color: "var(--color-text-secondary)",
+            margin: 0,
+          }}
+        >
+          Lodestar Analysis
+        </h4>
+        <button
+          data-testid="regenerate-button"
+          onClick={handleRegenerate}
+          disabled={isLoading}
+          aria-busy={isLoading}
+          aria-label="Regenerate narrative"
+          style={{
+            fontSize: "var(--font-size-label)",
+            padding: "4px 10px",
+            borderRadius: "var(--radius-md)",
+            border: "1px solid var(--color-border-default)",
+            background: isLoading ? "var(--color-fill-neutral)" : "var(--color-surface-card)",
+            color: isLoading ? "var(--color-text-tertiary)" : "var(--color-text-secondary)",
+            cursor: isLoading ? "not-allowed" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          {isLoading && (
+            <span
+              data-testid="loading-indicator"
+              aria-hidden="true"
+              style={{
+                display: "inline-block",
+                width: 10,
+                height: 10,
+                border: "2px solid var(--color-border-default)",
+                borderTopColor: "var(--color-text-secondary)",
+                borderRadius: "50%",
+                animation: "spin 0.6s linear infinite",
+              }}
+            />
+          )}
+          {isLoading ? "Regenerating…" : "Regenerate"}
+        </button>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* IDLE — show static fallback or placeholder                          */}
-      {/* ------------------------------------------------------------------ */}
-      {status === "idle" && (
-        <>
-          {staticFallback ? (
-            <p data-testid="lodestar-text" style={textStyle}>
-              {staticFallback}
-            </p>
-          ) : (
-            <p
-              data-testid="lodestar-placeholder"
-              style={{ ...textStyle, color: "#9ca3af", fontStyle: "italic" }}
-            >
-              AI narrative not yet generated
-            </p>
-          )}
-          {relativeTime && (
-            <p
-              data-testid="generated-at"
-              style={{ fontSize: 11, color: "#94a3b8", margin: "6px 0 0 0" }}
-            >
-              {relativeTime}
-            </p>
-          )}
-        </>
-      )}
-
-      {/* ------------------------------------------------------------------ */}
-      {/* STREAMING — incremental text + cursor                               */}
-      {/* ------------------------------------------------------------------ */}
-      {status === "streaming" && (
-        // aria-live polite + aria-atomic false: announces new chunks without
-        // re-reading the full accumulated text (R18.1)
-        <p
-          data-testid="lodestar-streaming-text"
-          style={textStyle}
-          aria-live="polite"
-          aria-atomic="false"
-        >
-          {text || (
-            <span style={{ color: "#94a3b8", fontStyle: "italic" }}>
-              Generating…
-            </span>
-          )}
-          <CursorAnimation />
-        </p>
-      )}
-
-      {/* ------------------------------------------------------------------ */}
-      {/* COMPLETE — full narrative + version badge                           */}
-      {/* ------------------------------------------------------------------ */}
-      {status === "complete" && (
-        <>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              marginBottom: 6,
-            }}
-          >
-            {/* Teal checkmark (R14.8) */}
-            <span
-              aria-label="Narrative complete"
-              style={{ color: "#0d9488", fontSize: 13, fontWeight: 700 }}
-            >
-              ✓
-            </span>
-            {/* Prompt version badge (R14.8) */}
-            {promptVersion && (
-              <span
-                aria-label={`Prompt version ${promptVersion}`}
-                style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  padding: "1px 6px",
-                  borderRadius: 9999,
-                  background: "#f1f5f9",
-                  color: "#64748b",
-                  letterSpacing: "0.03em",
-                }}
-              >
-                {promptVersion}
-              </span>
+      {displayText ? (
+        structured && sections ? (
+          <div data-testid="lodestar-structured">
+            {(Object.keys(SECTION_TITLES) as Array<keyof NarrativeSections>).map(
+              (key) => {
+                const body = sections[key];
+                if (!body) return null;
+                const style = SECTION_STYLES[key];
+                return (
+                  <div
+                    key={key}
+                    data-testid={`lodestar-section-${key}`}
+                    style={{
+                      marginBottom: 10,
+                      paddingLeft: 10,
+                      borderLeft: `3px solid ${style.border}`,
+                    }}
+                  >
+                    <h5
+                      style={{
+                        fontSize: "var(--font-size-label)",
+                        fontWeight: "var(--font-weight-semi)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.03em",
+                        color: style.border,
+                        margin: "0 0 4px 0",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <span aria-hidden="true">{style.icon}</span>
+                      {SECTION_TITLES[key]}
+                    </h5>
+                    <p
+                      style={{
+                        fontSize: "var(--font-size-body)",
+                        lineHeight: "var(--line-height-normal)",
+                        color: "var(--color-text-primary)",
+                        margin: 0,
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {body}
+                    </p>
+                  </div>
+                );
+              }
             )}
           </div>
-          <p data-testid="lodestar-text" style={textStyle}>
-            {text}
+        ) : (
+          <p
+            data-testid="lodestar-text"
+            style={{
+              fontSize: "var(--font-size-body)",
+              lineHeight: "var(--line-height-normal)",
+              color: "var(--color-text-primary)",
+              margin: 0,
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            {displayText}
           </p>
-        </>
-      )}
-
-      {/* ------------------------------------------------------------------ */}
-      {/* ERROR — coral message + retry (retry button is in header row)       */}
-      {/* ------------------------------------------------------------------ */}
-      {status === "error" && (
+        )
+      ) : (
         <p
-          data-testid="lodestar-error"
-          role="alert"
-          style={{ ...textStyle, color: "#dc2626", fontSize: 12 }}
+          data-testid="lodestar-placeholder"
+          style={{
+            fontSize: "var(--font-size-body)",
+            lineHeight: "var(--line-height-normal)",
+            color: "var(--color-text-tertiary)",
+            margin: 0,
+            fontStyle: "italic",
+          }}
         >
-          {error ?? "Narrative generation failed."}
+          AI narrative not yet generated
         </p>
       )}
+
+      {error && (
+        <p
+          data-testid="regenerate-error"
+          role="alert"
+          style={{
+            fontSize: "var(--font-size-caption)",
+            color: "var(--color-status-danger)",
+            margin: "8px 0 0 0",
+          }}
+        >
+          {error}
+        </p>
+      )}
+
+      {relativeTime && !error && (
+        <p
+          data-testid="generated-at"
+          style={{
+            fontSize: "var(--font-size-label)",
+            color: "var(--color-text-tertiary)",
+            margin: "6px 0 0 0",
+          }}
+        >
+          {relativeTime}
+        </p>
+      )}
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

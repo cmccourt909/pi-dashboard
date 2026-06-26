@@ -14,10 +14,10 @@ interface StatPillProps {
 
 export function StatPill({ label, value, sub, color }: StatPillProps) {
   return (
-    <div style={{ background: "#fff", border: "1px solid #dce3ea", borderRadius: 8, padding: "14px 20px", minWidth: 130 }}>
-      <div style={{ fontSize: 11, color: "#7a8a99", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 700, color: color || "#1a2b3c", lineHeight: 1 }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: "#7a8a99", marginTop: 4 }}>{sub}</div>}
+    <div style={{ background: "var(--color-surface-card)", border: "1px solid var(--color-border-default)", borderRadius: 8, padding: "var(--space-3) var(--space-5)", minWidth: 130 }}>
+      <div style={{ fontSize: "var(--font-size-label)", color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: "var(--font-size-h1)", fontWeight: 700, color: color || "var(--color-text-primary)", lineHeight: 1 }}>{value}</div>
+      {sub && <div style={{ fontSize: "var(--font-size-caption)", color: "var(--color-text-secondary)", marginTop: 4 }}>{sub}</div>}
     </div>
   );
 }
@@ -32,8 +32,8 @@ interface SectionHeaderProps {
 export function SectionHeader({ title, subtitle }: SectionHeaderProps) {
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ fontSize: 16, fontWeight: 700, color: "#1a2b3c" }}>{title}</div>
-      {subtitle && <div style={{ fontSize: 12, color: "#7a8a99", marginTop: 2 }}>{subtitle}</div>}
+      <div style={{ fontSize: "var(--font-size-h3)", fontWeight: 700, color: "var(--color-text-primary)" }}>{title}</div>
+      {subtitle && <div style={{ fontSize: "var(--font-size-caption)", color: "var(--color-text-secondary)", marginTop: 2 }}>{subtitle}</div>}
     </div>
   );
 }
@@ -43,8 +43,8 @@ export function SectionHeader({ title, subtitle }: SectionHeaderProps) {
 export function LoadingSpinner() {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 320, gap: 16 }}>
-      <div style={{ width: 40, height: 40, border: "3px solid #dce3ea", borderTop: "3px solid #1a6ca8", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-      <div style={{ fontSize: 13, color: "#7a8a99" }}>Loading from API…</div>
+      <div style={{ width: 40, height: 40, border: "3px solid var(--color-border-default)", borderTop: "3px solid var(--color-interactive-primary)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <div style={{ fontSize: "var(--font-size-body)", color: "var(--color-text-secondary)" }}>Loading from API…</div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
@@ -59,7 +59,7 @@ interface DataSourceBadgeProps {
 export function DataSourceBadge({ source }: DataSourceBadgeProps) {
   const live = source === "api";
   return (
-    <div style={{ background: live ? "#eafaf1" : "#fef9e7", border: `1px solid ${live ? "#a9dfbf" : "#f9e4b7"}`, color: live ? "#1e8449" : "#d68910", borderRadius: 6, padding: "5px 12px", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+    <div style={{ background: live ? "var(--color-fill-success)" : "var(--color-fill-warning)", border: `1px solid ${live ? "var(--color-status-success)" : "var(--color-status-warning)"}`, color: live ? "var(--color-status-success)" : "var(--color-status-warning)", borderRadius: 6, padding: "5px 12px", fontSize: "var(--font-size-label)", fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
       <span>{live ? "●" : "◌"}</span>
       {live ? "Live API data" : "Mock fallback (API unreachable)"}
     </div>

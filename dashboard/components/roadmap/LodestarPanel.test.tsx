@@ -1,339 +1,230 @@
-// dashboard/components/roadmap/LodestarPanel.test.tsx
-
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  act,
-} from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import LodestarPanel from "./LodestarPanel";
 
-// ---------------------------------------------------------------------------
-// EventSource mock
-// ---------------------------------------------------------------------------
+const defaultProps = {
+  featureKey: "FEAT-1",
+  generatedAt: null as string | null,
+};
 
-type ESHandler = (event: MessageEvent) => void;
-type ESErrorHandler = (event: Event) => void;
-
-interface MockES {
+class MockEventSource {
   url: string;
-  onmessage: ESHandler | null;
-  onerror: ESErrorHandler | null;
-  close: ReturnType<typeof vi.fn>;
-  emit: (data: object) => void;
-  triggerError: () => void;
-}
+  onopen: ((event: Event) => void) | null = null;
+  onmessage: ((event: MessageEvent) => void) | null = null;
+  onerror: ((event: Event) => void) | null = null;
+  closed = false;
 
-let mockESInstance: MockES | null = null;
-let mockESConstructorSpy: ReturnType<typeof vi.fn>;
+  constructor(url: string) {
+    this.url = url;
+  }
 
-function setupEventSourceMock() {
-  mockESInstance = null;
-  mockESConstructorSpy = vi.fn((url: string) => {
-    const es: MockES = {
-      url,
-      onmessage: null,
-      onerror: null,
-      close: vi.fn(),
-      emit(data: object) {
-        this.onmessage?.(
-          new MessageEvent("message", { data: JSON.stringify(data) })
-        );
-      },
-      triggerError() {
-        this.onerror?.(new Event("error"));
-      },
-    };
-    mockESInstance = es;
-    return es;
-  });
-  vi.stubGlobal("EventSource", mockESConstructorSpy);
-}
+  close() {
+    this.closed = true;
+  }
 
-function setupClipboardMock() {
-  Object.defineProperty(navigator, "clipboard", {
-    value: { writeText: vi.fn().mockResolvedValue(undefined) },
-    configurable: true,
-    writable: true,
-  });
-}
-
-function makeProps(overrides: Partial<React.ComponentProps<typeof LodestarPanel>> = {}) {
-  return {
-    text: null,
-    featureKey: "FEAT-1",
-    generatedAt: null,
-    pi: "PI-2026-Q1",
-    active: true,
-    ...overrides,
-  };
-}
-
-describe("LodestarPanel — Phase 2", () => {
-  beforeEach(() => {
-    setupEventSourceMock();
-    setupClipboardMock();
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-    vi.useRealTimers();
-  });
-
-  // -------------------------------------------------------------------------
-  // Idle state
-  // -------------------------------------------------------------------------
-
-  describe("idle state", () => {
-    it("renders static fallback text when active=false and text is provided", () => {
-      render(<LodestarPanel {...makeProps({ active: false, text: "Pre-generated narrative." })} />);
-      expect(screen.getByTestId("lodestar-text")).toHaveTextContent("Pre-generated narrative.");
-    });
-
-    it("renders placeholder when active=false and text is null", () => {
-      render(<LodestarPanel {...makeProps({ active: false, text: null })} />);
-      expect(screen.getByTestId("lodestar-placeholder")).toHaveTextContent("AI narrative not yet generated");
-    });
-
-    it("applies italic style to placeholder", () => {
-      render(<LodestarPanel {...makeProps({ active: false, text: null })} />);
-      expect(screen.getByTestId("lodestar-placeholder")).toHaveStyle({ fontStyle: "italic" });
-    });
-
-    it("renders generated_at as relative time when provided", () => {
-      const ts = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-      render(<LodestarPanel {...makeProps({ active: false, text: "Some text", generatedAt: ts })} />);
-      expect(screen.getByTestId("generated-at")).toHaveTextContent("Generated 2 hours ago");
-    });
-
-    it("does not render generated_at when null", () => {
-      render(<LodestarPanel {...makeProps({ active: false, text: "Some text", generatedAt: null })} />);
-      expect(screen.queryByTestId("generated-at")).not.toBeInTheDocument();
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // Streaming state
-  // -------------------------------------------------------------------------
-
-  describe("streaming state", () => {
-    it("opens an EventSource when active=true", () => {
-      render(<LodestarPanel {...makeProps()} />);
-      expect(mockESConstructorSpy).toHaveBeenCalledOnce();
-      expect(mockESConstructorSpy).toHaveBeenCalledWith(expect.stringContaining("PI-2026-Q1"));
-    });
-
-    it("shows streaming text and cursor while chunks arrive", async () => {
-      render(<LodestarPanel {...makeProps()} />);
-      act(() => mockESInstance!.emit({ type: "chunk", text: "Hello " }));
-      act(() => mockESInstance!.emit({ type: "chunk", text: "world." }));
-      expect(screen.getByTestId("lodestar-streaming-text")).toHaveTextContent("Hello world.");
-      expect(screen.getByTestId("lodestar-streaming-text").querySelector(".lodestar-cursor")).not.toBeNull();
-    });
-
-    it("renders Cancel button while streaming", () => {
-      render(<LodestarPanel {...makeProps()} />);
-      act(() => mockESInstance!.emit({ type: "chunk", text: "..." }));
-      expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
-    });
-
-    it("has aria-live=polite and aria-atomic=false on streaming element", () => {
-      render(<LodestarPanel {...makeProps()} />);
-      act(() => mockESInstance!.emit({ type: "chunk", text: "..." }));
-      const el = screen.getByTestId("lodestar-streaming-text");
-      expect(el).toHaveAttribute("aria-live", "polite");
-      expect(el).toHaveAttribute("aria-atomic", "false");
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // Complete state
-  // -------------------------------------------------------------------------
-
-  describe("complete state", () => {
-    async function renderComplete(text = "All features on track.") {
-      render(<LodestarPanel {...makeProps()} />);
-      act(() => mockESInstance!.emit({ type: "meta", promptVersion: "v1.0" }));
-      act(() => mockESInstance!.emit({ type: "chunk", text }));
-      act(() => mockESInstance!.emit({ type: "done" }));
-      await waitFor(() => expect(screen.getByTestId("lodestar-text")).toBeInTheDocument());
+  emit(data: unknown) {
+    if (this.onmessage) {
+      this.onmessage(new MessageEvent("message", { data: JSON.stringify(data) }));
     }
+  }
+}
 
-    it("renders narrative text in complete state", async () => {
-      await renderComplete("All features on track.");
-      expect(screen.getByTestId("lodestar-text")).toHaveTextContent("All features on track.");
-    });
+const eventSourceInstances: MockEventSource[] = [];
 
-    it("renders prompt version badge", async () => {
-      await renderComplete();
-      expect(screen.getByLabelText("Prompt version v1.0")).toBeInTheDocument();
-    });
+beforeEach(() => {
+  eventSourceInstances.length = 0;
+  vi.stubGlobal(
+    "EventSource",
+    vi.fn(function (url: string) {
+      const instance = new MockEventSource(url);
+      eventSourceInstances.push(instance);
+      return instance;
+    })
+  );
+});
 
-    it("renders teal checkmark", async () => {
-      await renderComplete();
-      expect(screen.getByLabelText("Narrative complete")).toBeInTheDocument();
-    });
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
-    it("renders Copy button", async () => {
-      await renderComplete();
-      expect(screen.getByRole("button", { name: /copy narrative/i })).toBeInTheDocument();
-    });
+function getLastEventSource(): MockEventSource {
+  const es = eventSourceInstances[eventSourceInstances.length - 1];
+  if (!es) throw new Error("No EventSource instance created");
+  return es;
+}
 
-    it("copies text to clipboard and shows Copied confirmation", async () => {
-      await renderComplete("Narrative text.");
-      fireEvent.click(screen.getByRole("button", { name: /copy narrative/i }));
-      await waitFor(() => expect(screen.getByText("Copied")).toBeInTheDocument());
-      expect(navigator.clipboard.writeText).toHaveBeenCalledWith("Narrative text.");
-    });
+describe("LodestarPanel", () => {
+  it("renders AI narrative text when text is provided", () => {
+    const narrative = "Feature is on track for delivery in Sprint 3.";
+    render(<LodestarPanel text={narrative} {...defaultProps} />);
 
-    it("closes the EventSource after done event", async () => {
-      render(<LodestarPanel {...makeProps()} />);
-      const es = mockESInstance!;
-      act(() => es.emit({ type: "done" }));
-      expect(es.close).toHaveBeenCalledOnce();
-    });
-
-    it("preserves whitespace in multi-line narrative text", async () => {
-      await renderComplete("Line one.\nLine two.");
-      expect(screen.getByTestId("lodestar-text")).toHaveStyle({ whiteSpace: "pre-wrap" });
-    });
+    expect(screen.getByTestId("lodestar-text")).toHaveTextContent(narrative);
+    expect(screen.queryByTestId("lodestar-placeholder")).not.toBeInTheDocument();
   });
 
-  // -------------------------------------------------------------------------
-  // Error state
-  // -------------------------------------------------------------------------
+  it("renders placeholder when text is null", () => {
+    render(<LodestarPanel text={null} {...defaultProps} />);
 
-  describe("error state", () => {
-    it("renders error message with role=alert", async () => {
-      render(<LodestarPanel {...makeProps()} />);
-      act(() => mockESInstance!.emit({ type: "error", error: "Backend timeout." }));
-      await waitFor(() => expect(screen.getByTestId("lodestar-error")).toBeInTheDocument());
-      expect(screen.getByTestId("lodestar-error")).toHaveAttribute("role", "alert");
-      expect(screen.getByTestId("lodestar-error")).toHaveTextContent("Backend timeout.");
-    });
-
-    it("renders Retry button on error", async () => {
-      render(<LodestarPanel {...makeProps()} />);
-      act(() => mockESInstance!.emit({ type: "error", error: "Backend timeout." }));
-      await waitFor(() => expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument());
-    });
-
-    it("renders error message on EventSource onerror", async () => {
-      render(<LodestarPanel {...makeProps()} />);
-      act(() => mockESInstance!.triggerError());
-      await waitFor(() =>
-        expect(screen.getByTestId("lodestar-error")).toHaveTextContent("Connection to Lodestar failed")
-      );
-    });
+    expect(screen.getByTestId("lodestar-placeholder")).toHaveTextContent(
+      "AI narrative not yet generated"
+    );
+    expect(screen.queryByTestId("lodestar-text")).not.toBeInTheDocument();
   });
 
-  // -------------------------------------------------------------------------
-  // Cancel
-  // -------------------------------------------------------------------------
+  it("has an accessible section with aria-label", () => {
+    render(<LodestarPanel text={null} {...defaultProps} />);
 
-  describe("cancel", () => {
-    it("closes EventSource and returns to idle on Cancel click", async () => {
-      render(<LodestarPanel {...makeProps()} />);
-      const es = mockESInstance!;
-      act(() => es.emit({ type: "chunk", text: "Partial..." }));
-      fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
-      expect(es.close).toHaveBeenCalled();
-      await waitFor(() =>
-        expect(screen.queryByTestId("lodestar-streaming-text")).not.toBeInTheDocument()
-      );
-    });
+    const section = screen.getByRole("region", { name: "Lodestar Analysis" });
+    expect(section).toBeInTheDocument();
   });
 
-  // -------------------------------------------------------------------------
-  // Feature switch regression — T2.2
-  // -------------------------------------------------------------------------
+  it("renders the section header", () => {
+    render(<LodestarPanel text="Some text" {...defaultProps} />);
 
-  describe("feature switch regression (T2.2)", () => {
-    it("opens a new EventSource when featureKey changes after complete", async () => {
-      const { rerender } = render(
-        <LodestarPanel {...makeProps({ featureKey: "ALPHA-100" })} key="ALPHA-100" />
-      );
-      act(() => mockESInstance!.emit({ type: "chunk", text: "Alpha-100 narrative." }));
-      act(() => mockESInstance!.emit({ type: "done" }));
-      await waitFor(() =>
-        expect(screen.getByTestId("lodestar-text")).toHaveTextContent("Alpha-100 narrative.")
-      );
-
-      rerender(
-        <LodestarPanel {...makeProps({ featureKey: "ALPHA-101", text: null })} key="ALPHA-101" />
-      );
-
-      expect(mockESConstructorSpy).toHaveBeenCalledTimes(2);
-      expect(mockESConstructorSpy).toHaveBeenLastCalledWith(expect.stringContaining("ALPHA-101"));
-    });
-
-    it("renders new feature streaming text after switch", async () => {
-      const { rerender } = render(
-        <LodestarPanel {...makeProps({ featureKey: "ALPHA-100" })} key="ALPHA-100" />
-      );
-      act(() => mockESInstance!.emit({ type: "done" }));
-      await waitFor(() =>
-        expect(screen.queryByTestId("lodestar-streaming-text")).not.toBeInTheDocument()
-      );
-
-      rerender(
-        <LodestarPanel {...makeProps({ featureKey: "ALPHA-101" })} key="ALPHA-101" />
-      );
-      act(() => mockESInstance!.emit({ type: "chunk", text: "Alpha-101 narrative." }));
-      expect(screen.getByTestId("lodestar-streaming-text")).toHaveTextContent("Alpha-101 narrative.");
-    });
-
-    it("does not open a new EventSource when same feature is re-rendered", async () => {
-      render(<LodestarPanel {...makeProps({ featureKey: "ALPHA-100" })} />);
-      act(() => mockESInstance!.emit({ type: "done" }));
-      await waitFor(() =>
-        expect(screen.queryByTestId("lodestar-streaming-text")).not.toBeInTheDocument()
-      );
-      expect(mockESConstructorSpy).toHaveBeenCalledTimes(1);
-    });
+    expect(screen.getByText("Lodestar Analysis")).toBeInTheDocument();
   });
 
-  // -------------------------------------------------------------------------
-  // Session cache
-  // -------------------------------------------------------------------------
+  it("applies italic style to placeholder text", () => {
+    render(<LodestarPanel text={null} {...defaultProps} />);
 
-  describe("session cache", () => {
-    it("serves cached result without opening a new EventSource on revisit", async () => {
-      const { unmount } = render(
-        <LodestarPanel {...makeProps({ featureKey: "ALPHA-100" })} key="ALPHA-100-v1" />
-      );
-      act(() => mockESInstance!.emit({ type: "meta", promptVersion: "v1.0" }));
-      act(() => mockESInstance!.emit({ type: "chunk", text: "Cached narrative." }));
-      act(() => mockESInstance!.emit({ type: "done" }));
-      await waitFor(() => expect(screen.getByTestId("lodestar-text")).toBeInTheDocument());
-      unmount();
-
-      render(
-        <LodestarPanel {...makeProps({ featureKey: "ALPHA-100" })} key="ALPHA-100-v2" />
-      );
-      await waitFor(() =>
-        expect(screen.getByTestId("lodestar-text")).toHaveTextContent("Cached narrative.")
-      );
-      expect(mockESConstructorSpy).toHaveBeenCalledTimes(1);
-    });
+    const placeholder = screen.getByTestId("lodestar-placeholder");
+    expect(placeholder).toHaveStyle({ fontStyle: "italic" });
   });
 
-  // -------------------------------------------------------------------------
-  // Accessibility
-  // -------------------------------------------------------------------------
+  it("applies muted color to placeholder text", () => {
+    render(<LodestarPanel text={null} {...defaultProps} />);
 
-  describe("accessibility", () => {
-    it("has an accessible region with aria-label=Lodestar Analysis", () => {
-      render(<LodestarPanel {...makeProps({ active: false })} />);
-      expect(screen.getByRole("region", { name: "Lodestar Analysis" })).toBeInTheDocument();
+    const placeholder = screen.getByTestId("lodestar-placeholder");
+    expect(placeholder.style.color).toBe("var(--color-text-tertiary)");
+  });
+
+  it("preserves whitespace in multi-line narrative text", () => {
+    const multiline = "Line one.\nLine two.\nLine three.";
+    render(<LodestarPanel text={multiline} {...defaultProps} />);
+
+    const textEl = screen.getByTestId("lodestar-text");
+    expect(textEl).toHaveStyle({ whiteSpace: "pre-wrap" });
+    expect(textEl).toHaveTextContent("Line one.");
+    expect(textEl).toHaveTextContent("Line two.");
+  });
+
+  it("renders the Regenerate button", () => {
+    render(<LodestarPanel text="Some text" {...defaultProps} />);
+
+    const button = screen.getByTestId("regenerate-button");
+    expect(button).toBeInTheDocument();
+    expect(button).toHaveTextContent("Regenerate");
+    expect(button).not.toBeDisabled();
+  });
+
+  it("displays generated_at as relative time", () => {
+    const recentTimestamp = new Date(
+      Date.now() - 2 * 60 * 60 * 1000
+    ).toISOString();
+    render(
+      <LodestarPanel
+        text="Some text"
+        featureKey="FEAT-1"
+        generatedAt={recentTimestamp}
+      />
+    );
+
+    expect(screen.getByTestId("generated-at")).toHaveTextContent(
+      "Generated 2 hours ago"
+    );
+  });
+
+  it("does not display generated_at when null", () => {
+    render(<LodestarPanel text="Some text" {...defaultProps} />);
+
+    expect(screen.queryByTestId("generated-at")).not.toBeInTheDocument();
+  });
+
+  it("renders structured sections when headers are present", () => {
+    const structured = `Delivery Status: On track.
+Risks & Blockers: None.
+Recommended Actions: Keep monitoring.`;
+
+    render(<LodestarPanel text={structured} {...defaultProps} />);
+
+    expect(screen.getByTestId("lodestar-structured")).toBeInTheDocument();
+    expect(screen.getByTestId("lodestar-section-deliveryStatus")).toHaveTextContent(
+      "On track."
+    );
+    expect(
+      screen.getByTestId("lodestar-section-risksAndBlockers")
+    ).toHaveTextContent("None.");
+    expect(
+      screen.getByTestId("lodestar-section-recommendedActions")
+    ).toHaveTextContent("Keep monitoring.");
+  });
+
+  it("renders plain text when no headers are present", () => {
+    const plain = "Feature is on track for delivery in Sprint 3.";
+    render(<LodestarPanel text={plain} {...defaultProps} />);
+
+    expect(screen.getByTestId("lodestar-text")).toHaveTextContent(plain);
+    expect(screen.queryByTestId("lodestar-structured")).not.toBeInTheDocument();
+  });
+
+  it("starts SSE stream when Regenerate is clicked", async () => {
+    render(<LodestarPanel text="Some text" pi="26.2" {...defaultProps} />);
+
+    const button = screen.getByTestId("regenerate-button");
+    await userEvent.click(button);
+
+    const es = getLastEventSource();
+    expect(es.url).toBe("/api/pis/26.2/features/FEAT-1/lodestar");
+  });
+
+  it("shows streaming state during regeneration", async () => {
+    render(<LodestarPanel text="Some text" pi="26.2" {...defaultProps} />);
+
+    const button = screen.getByTestId("regenerate-button");
+    await userEvent.click(button);
+
+    const es = getLastEventSource();
+    act(() => {
+      es.emit({ type: "meta", promptVersion: "v2.0" });
     });
 
-    it("renders section header text", () => {
-      render(<LodestarPanel {...makeProps({ active: false })} />);
-      expect(screen.getByText("Lodestar Analysis")).toBeInTheDocument();
+    expect(screen.getByTestId("loading-indicator")).toBeInTheDocument();
+    expect(button).toHaveTextContent("Regenerating…");
+  });
+
+  it("updates displayed text with streamed chunks", async () => {
+    render(<LodestarPanel text="Old text" pi="26.2" {...defaultProps} />);
+
+    const button = screen.getByTestId("regenerate-button");
+    await userEvent.click(button);
+
+    const es = getLastEventSource();
+    act(() => {
+      es.emit({ type: "meta", promptVersion: "v2.0" });
+      es.emit({ type: "chunk", text: "New streamed text." });
     });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("lodestar-text")).toHaveTextContent(
+        "New streamed text."
+      )
+    );
+  });
+
+  it("shows error when stream fails", async () => {
+    render(<LodestarPanel text="Some text" pi="26.2" {...defaultProps} />);
+
+    const button = screen.getByTestId("regenerate-button");
+    await userEvent.click(button);
+
+    const es = getLastEventSource();
+    act(() => {
+      es.emit({ type: "error", error: "Generation failed" });
+    });
+
+    expect(screen.getByTestId("regenerate-error")).toHaveTextContent(
+      "Generation failed"
+    );
   });
 });

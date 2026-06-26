@@ -39,7 +39,9 @@ export default function BlockerFlag({
         background: "none",
         border: "2px solid transparent",
         cursor: "pointer",
-        padding: "2px 4px",
+        width: 44,
+        height: 44,
+        padding: 0,
         fontSize: 14,
         lineHeight: 1,
         borderRadius: 3,
@@ -50,8 +52,8 @@ export default function BlockerFlag({
       <span aria-hidden="true">⚠</span>
       <style>{`
         .blocker-flag:focus-visible {
-          border-color: #E8622A;
-          box-shadow: 0 0 0 2px rgba(232, 98, 42, 0.3);
+          border-color: var(--color-brand-coral);
+          box-shadow: 0 0 0 2px rgba(232, 93, 70, 0.3);
         }
       `}</style>
     </button>

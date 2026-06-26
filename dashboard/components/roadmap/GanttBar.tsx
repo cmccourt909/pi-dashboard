@@ -164,7 +164,7 @@ export default function GanttBar({
             style={{
               width: widths.done,
               height: "100%",
-              backgroundColor: "#0d9488",
+              backgroundColor: "var(--color-status-success)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -174,9 +174,9 @@ export default function GanttBar({
             {labelInside && (
               <span
                 style={{
-                  color: "#ffffff",
-                  fontSize: 11,
-                  fontWeight: 600,
+                  color: "var(--color-text-inverse)",
+                  fontSize: "var(--font-size-label)",
+                  fontWeight: "var(--font-weight-semi)",
                   lineHeight: 1,
                   whiteSpace: "nowrap",
                 }}
@@ -194,7 +194,7 @@ export default function GanttBar({
             style={{
               width: widths.prog,
               height: "100%",
-              backgroundColor: "rgba(59, 130, 246, 0.6)",
+              backgroundColor: "var(--color-status-warning)",
             }}
           />
         )}
@@ -206,7 +206,7 @@ export default function GanttBar({
             style={{
               width: widths.todo,
               height: "100%",
-              backgroundColor: "rgba(156, 163, 175, 0.4)",
+              backgroundColor: "var(--color-brand-slate)",
             }}
           />
         )}
@@ -217,9 +217,9 @@ export default function GanttBar({
         <span
           style={{
             marginLeft: 6,
-            fontSize: 11,
-            fontWeight: 600,
-            color: "#374151",
+            fontSize: "var(--font-size-label)",
+            fontWeight: "var(--font-weight-semi)",
+            color: "var(--color-text-primary)",
             whiteSpace: "nowrap",
           }}
         >

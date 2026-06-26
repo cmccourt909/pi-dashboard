@@ -39,32 +39,32 @@ export default class ErrorBoundary extends Component<Props, State> {
       return (
         <div
           style={{
-            background: "color-mix(in srgb, var(--status-critical, #dc2626) 8%, transparent)",
-            border: "1px solid var(--status-critical, #dc2626)",
-            borderRadius: 6,
-            padding: "20px 24px",
-            margin: "16px 0",
+            background: "var(--color-fill-danger)",
+            border: "1px solid var(--color-status-danger)",
+            borderRadius: "var(--radius-md)",
+            padding: "var(--space-5) var(--space-6)",
+            margin: "var(--space-4) 0",
           }}
         >
           <div
             style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: 12,
-              fontWeight: 700,
-              color: "var(--status-critical, #dc2626)",
+              fontFamily: "var(--font-mono)",
+              fontSize: "var(--font-size-caption)",
+              fontWeight: "var(--font-weight-bold)",
+              color: "var(--color-status-danger)",
               letterSpacing: "0.08em",
               textTransform: "uppercase",
-              marginBottom: 8,
+              marginBottom: "var(--space-2)",
             }}
           >
             Something went wrong
           </div>
           <p
             style={{
-              fontSize: 14,
-              color: "var(--text-secondary, #475569)",
-              lineHeight: 1.5,
-              marginBottom: 12,
+              fontSize: "var(--font-size-body)",
+              color: "var(--color-text-primary)",
+              lineHeight: "var(--line-height-normal)",
+              marginBottom: "var(--space-3)",
             }}
           >
             An unexpected error occurred while rendering this section.
@@ -73,12 +73,12 @@ export default class ErrorBoundary extends Component<Props, State> {
           {this.state.error && (
             <pre
               style={{
-                fontSize: 11,
-                fontFamily: "var(--font-mono, monospace)",
-                color: "var(--text-muted, #94a3b8)",
-                background: "var(--bg-panel, #f8fafc)",
-                padding: "8px 10px",
-                borderRadius: 4,
+                fontSize: "var(--font-size-caption)",
+                fontFamily: "var(--font-mono)",
+                color: "var(--color-text-secondary)",
+                background: "var(--color-fill-neutral)",
+                padding: "var(--space-2) var(--space-3)",
+                borderRadius: "var(--radius-sm)",
                 overflow: "auto",
                 maxHeight: 100,
               }}
@@ -89,15 +89,15 @@ export default class ErrorBoundary extends Component<Props, State> {
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
             style={{
-              marginTop: 12,
-              padding: "6px 14px",
-              fontSize: 12,
-              fontWeight: 600,
-              fontFamily: "var(--font-mono, monospace)",
-              border: "1px solid var(--border, #e2e8f0)",
-              borderRadius: 4,
-              background: "var(--bg-card, white)",
-              color: "var(--text-primary, #1e293b)",
+              marginTop: "var(--space-3)",
+              padding: "var(--space-2) var(--space-3)",
+              fontSize: "var(--font-size-caption)",
+              fontWeight: "var(--font-weight-semi)",
+              fontFamily: "var(--font-mono)",
+              border: "1px solid var(--color-border-default)",
+              borderRadius: "var(--radius-md)",
+              background: "var(--color-surface-card)",
+              color: "var(--color-text-primary)",
               cursor: "pointer",
             }}
           >

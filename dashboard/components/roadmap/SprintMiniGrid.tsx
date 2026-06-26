@@ -3,15 +3,15 @@
 import React from "react";
 import { SprintBreakdown } from "@/types/roadmap";
 
-/** Team color map. */
+/** Team color map — mapped to Northline brand palette. */
 const TEAM_COLORS: Record<string, string> = {
-  Alpha: "#6366f1",
-  Bravo: "#0891b2",
-  Charlie: "#d97706",
+  Alpha: "#202670",
+  Bravo: "#1D6EFF",
+  Charlie: "#0F6038",
 };
 
 /** Future sprint neutral color. */
-const FUTURE_COLOR = "#e8e6e0";
+const FUTURE_COLOR = "#F2F4F6";
 
 /** Number of sprint bars to always render. */
 const SPRINT_COUNT = 5;

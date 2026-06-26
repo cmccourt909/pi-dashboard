@@ -126,3 +126,31 @@ This feature adds AI-generated delivery narratives ("Lodestar narratives") to th
 4. WHEN regeneration completes successfully, THE LodestarPanel SHALL replace the displayed text with the new Lodestar_Narrative.
 5. IF regeneration fails, THEN THE LodestarPanel SHALL display an inline error message and re-enable the "Regenerate" button.
 6. THE LodestarPanel SHALL display the `generated_at` timestamp formatted as a relative time (e.g., "Generated 2 hours ago") below the narrative text.
+
+### Requirement 10: Phase 3 — Structured Section Rendering
+
+**User Story:** As a delivery manager, I want the Lodestar narrative split into clearly labeled sections (Delivery Status, Risks & Blockers, Recommended Actions) so that I can quickly scan the most relevant information.
+
+#### Acceptance Criteria
+
+1. THE `LodestarPanel` SHALL render a streamed or stored narrative as three distinct sections: **Delivery Status**, **Risks & Blockers**, and **Recommended Actions**.
+2. THE backend prompt template (v2.0) SHALL elicit each section with explicit sentinel headers (`Delivery Status:`, `Risks & Blockers:`, `Recommended Actions:`) so the frontend can parse them deterministically.
+3. THE frontend SHALL implement a `parseSections` utility that accepts a raw narrative string and returns the three typed sections, preserving any section that is missing or empty as an empty string.
+4. EACH section SHALL be rendered with distinct visual styling (e.g., color, icon, or border) so a user can distinguish them at a glance.
+5. IF the raw narrative does not contain a recognized section header, THEN THE `parseSections` utility SHALL return the unmatched text as the **Delivery Status** section and leave the other two sections empty.
+6. THE `LodestarPanel` prop signature SHALL remain unchanged so that `DetailDrawer.tsx` requires no modifications.
+
+### Requirement 11: Phase 3 — Streaming Hook Property Tests
+
+**User Story:** As a developer, I want property-based tests for the Lodestar SSE streaming hook so that the state machine is robust against arbitrary event sequences.
+
+#### Acceptance Criteria
+
+1. THE `useLodestarStream` hook SHALL be implemented (or the existing one updated) to consume the backend SSE endpoint `GET /api/pis/{pi}/features/{feature_key}/lodestar`.
+2. THE hook SHALL maintain a state machine with at least the following states: `idle`, `loading`, `streaming`, `complete`, and `error`.
+3. THE hook SHALL transition from `idle` → `loading` when a stream is requested, `loading` → `streaming` on the first `chunk` event, and `streaming` → `complete` on the `done` event.
+4. IF an `error` event is received at any point, THEN THE hook SHALL transition to the `error` state and capture the error message.
+5. THE hook SHALL accumulate chunk text and expose the accumulated narrative as it arrives.
+6. THE hook SHALL cancel the SSE connection and clean up event listeners on unmount or when a new stream is started.
+7. A `fast-check` property test SHALL verify that for any valid sequence of `meta`, `chunk`, `done`, and `error` events, the hook's final state and accumulated text are consistent with the event sequence.
+8. A `fast-check` property test SHALL verify that arbitrary interleavings of `chunk` events produce the same final text as the concatenation of all chunk texts in order.

@@ -340,3 +340,142 @@ Properties to implement:
 - Error message shown on failure
 - Relative time formatting for various timestamps
 - Progressive token rendering (Phase 2)
+
+## Phase 3 — Structured Rendering and Streaming Quality
+
+### Overview
+
+Phase 3 upgrades the Lodestar experience from a plain-text paragraph to three visually distinct sections, and it hardens the SSE streaming hook with property-based tests. The backend prompt is bumped to v2.0 with explicit sentinel headers; the frontend parses those headers into typed sections; and the hook state machine is verified against arbitrary event sequences.
+
+### Key Design Decisions
+
+1. **Sentinel headers in the prompt** — The LLM is instructed to emit `Delivery Status:`, `Risks & Blockers:`, and `Recommended Actions:` headers. This makes parsing deterministic without relying on natural-language heuristics.
+2. **Graceful parsing fallback** — If a streamed narrative lacks headers (e.g., legacy cached content), the entire text is treated as the **Delivery Status** section so the UI never breaks.
+3. **Stable component contract** — `LodestarPanel` keeps its existing props (`text`, `featureKey`, `generatedAt`). Internally it decides whether to render plain text or structured sections based on whether sections can be parsed.
+4. **Server-side staleness** — The v2.0 major version bump automatically triggers regeneration via the existing R21 staleness gate, so no frontend changes are needed to force fresh content.
+5. **Property-based hook testing** — `fast-check` generates arbitrary sequences of SSE events and asserts that the hook state machine and accumulated text are always consistent.
+
+### Architecture
+
+```mermaid
+flowchart TD
+    subgraph Frontend
+        LP[LodestarPanel]
+        PS[parseSections]
+        US[useLodestarStream]
+    end
+
+    subgraph Backend
+        LR[Lodestar Router /api/pis/{pi}/features/{key}/lodestar]
+        PT[Prompt Template v2.0]
+    end
+
+    LR -->|SSE events| US
+    US -->|raw narrative| PS
+    PS -->|typed sections| LP
+```
+
+### Backend Prompt Template v2.0
+
+The prompt must instruct the model to produce exactly the three sentinel headers. Example shape (max 180 words):
+
+```
+You are a delivery intelligence assistant. Generate a concise narrative for a software feature, structured into exactly three sections with these headers:
+
+Delivery Status:
+Risks & Blockers:
+Recommended Actions:
+
+Feature context:
+- Feature: {feature_key} — {summary}
+- Team: {team}
+- RAG status: {rag_status}
+- Completion: {completion_pct:.1f}% of PI stories done
+- Active blockers: {blocker_text}
+- Sprints remaining in PI: {sprints_remaining}
+
+Rules:
+- Keep the entire response under 180 words.
+- Use the three headers exactly as shown.
+- Be direct, factual, and actionable.
+- Do not add extra sections or markdown formatting.
+```
+
+### Frontend `parseSections` Utility
+
+Co-located with `LodestarPanel` (e.g., `dashboard/components/roadmap/parseSections.ts`).
+
+```typescript
+interface NarrativeSections {
+  deliveryStatus: string;
+  risksAndBlockers: string;
+  recommendedActions: string;
+}
+
+function parseSections(raw: string): NarrativeSections;
+```
+
+Implementation notes:
+- Use a case-insensitive regex to match the three headers in any order.
+- Trim whitespace and trailing newlines from each section body.
+- If no header is found, return `{ deliveryStatus: raw.trim(), risksAndBlockers: "", recommendedActions: "" }`.
+
+### Frontend `useLodestarStream` Hook
+
+New file: `dashboard/components/roadmap/useLodestarStream.ts`.
+
+```typescript
+type StreamState = "idle" | "loading" | "streaming" | "complete" | "error";
+
+interface UseLodestarStreamResult {
+  state: StreamState;
+  text: string;
+  error: string | null;
+  start: (pi: string, featureKey: string) => void;
+}
+
+function useLodestarStream(): UseLodestarStreamResult;
+```
+
+Implementation notes:
+- Open an `EventSource` to `GET /api/pis/{pi}/features/{feature_key}/lodestar`.
+- Parse `meta`, `chunk`, `done`, and `error` events from the SSE data.
+- Transition state machine as events arrive.
+- Accumulate chunk text in a ref and update React state on a throttled schedule (e.g., every 50 ms or after a punctuation boundary) to avoid excessive re-renders.
+- Abort the connection and remove listeners on unmount or when `start` is called again.
+
+### Structured `LodestarPanel` Rendering
+
+When `parseSections` detects at least one section header:
+- Render **Delivery Status** with a green/teal accent.
+- Render **Risks & Blockers** with an amber/red accent.
+- Render **Recommended Actions** with a blue accent.
+
+When no headers are detected, fall back to the existing plain-text rendering to preserve compatibility with legacy cached narratives.
+
+### Testing
+
+#### Frontend Property Tests (`fast-check` + Vitest)
+
+**Property 1: Hook state machine consistency**
+- Generate arbitrary sequences of `meta`, `chunk`, `done`, and `error` events.
+- Assert that the final `state` and `text` match the expected outcome of the sequence (e.g., `error` always ends in `error`; `done` always ends in `complete` with concatenated chunk text).
+
+**Property 2: Chunk text accumulation order**
+- Generate arbitrary arrays of chunk strings.
+- Assert that the final accumulated text equals the chunks joined in order, regardless of interleaving or timing.
+
+**Property 3: parseSections determinism**
+- Generate raw narrative strings containing the three headers in random order and with random body text.
+- Assert that `parseSections` returns the same result for the same input and that each header's body is isolated correctly.
+
+#### Unit Tests (Vitest + React Testing Library)
+
+- `parseSections` returns all three sections when headers are present.
+- `parseSections` falls back to `deliveryStatus` when no headers are present.
+- `LodestarPanel` renders structured sections with distinct styling when headers are present.
+- `LodestarPanel` falls back to plain text when no headers are present.
+- `useLodestarStream` transitions through `idle` → `loading` → `streaming` → `complete` for a normal stream.
+- `useLodestarStream` enters `error` state when an error event is received.
+- `useLodestarStream` accumulates text from multiple chunk events.
+- `useLodestarStream` aborts the connection on unmount.

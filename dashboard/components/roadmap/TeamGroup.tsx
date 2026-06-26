@@ -34,6 +34,7 @@ export default function TeamGroup({ team, children }: TeamGroupProps) {
       {/* Team Header */}
       <button
         type="button"
+        data-testid="team-group-header"
         onClick={() => setCollapsed((prev) => !prev)}
         aria-expanded={!collapsed}
         aria-controls={`team-group-content-${team.toLowerCase()}`}
@@ -42,14 +43,15 @@ export default function TeamGroup({ team, children }: TeamGroupProps) {
           alignItems: "center",
           gap: 6,
           width: "100%",
+          minHeight: 44,
           padding: "6px 12px",
           border: "none",
-          borderBottom: "1px solid var(--color-border, #e2e8f0)",
-          background: "var(--color-indigo-50, #f8fafc)",
+          borderBottom: "1px solid var(--color-border-default)",
+          background: "var(--color-fill-neutral)",
           cursor: "pointer",
-          fontSize: 12,
-          fontWeight: 600,
-          color: "var(--color-indigo-900, #1e293b)",
+          fontSize: "var(--font-size-label)",
+          fontWeight: "var(--font-weight-semi)",
+          color: "var(--color-text-primary)",
           textAlign: "left",
           letterSpacing: "0.02em",
           textTransform: "uppercase",
@@ -60,7 +62,7 @@ export default function TeamGroup({ team, children }: TeamGroupProps) {
             display: "inline-block",
             transition: "transform 150ms ease",
             transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)",
-            fontSize: 10,
+            fontSize: "var(--font-size-caption)",
           }}
           aria-hidden="true"
         >

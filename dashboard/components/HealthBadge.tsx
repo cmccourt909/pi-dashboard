@@ -5,23 +5,23 @@ type Status = "healthy" | "warning" | "critical" | "unknown";
 const CONFIG: Record<Status, { label: string; color: string; bg: string }> = {
   healthy: {
     label: "Healthy",
-    color: "var(--color-success)",
-    bg: "var(--color-success-bg)",
+    color: "var(--color-status-success)",
+    bg: "var(--color-fill-success)",
   },
   warning: {
     label: "At risk",
-    color: "var(--color-warning)",
-    bg: "var(--color-warning-bg)",
+    color: "var(--color-status-warning)",
+    bg: "var(--color-fill-warning)",
   },
   critical: {
     label: "Critical",
-    color: "var(--color-danger)",
-    bg: "var(--color-danger-bg)",
+    color: "var(--color-status-danger)",
+    bg: "var(--color-fill-danger)",
   },
   unknown: {
     label: "Unknown",
-    color: "var(--color-text-muted)",
-    bg: "var(--color-indigo-50)",
+    color: "var(--color-text-secondary)",
+    bg: "var(--color-fill-neutral)",
   },
 };
 
@@ -42,7 +42,7 @@ export default function HealthBadge({ status }: Props) {
         color: cfg.color,
         fontSize: 11,
         fontWeight: 500,
-        borderRadius: "var(--radius-full)",
+        borderRadius: "var(--radius-pill)",
         background: cfg.bg,
       }}
     >
