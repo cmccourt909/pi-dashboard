@@ -234,33 +234,33 @@ This plan implements AI-generated delivery narratives for the WaypointPI Program
 
 ## Phase 3 — Structured Rendering and Streaming Quality
 
-- [ ] 10. Backend prompt v2.0 sentinel headers
-  - [ ] 10.1 Update `build_lodestar_prompt` in `app/lodestar/prompts.py`
+- [x] 10. Backend prompt v2.0 sentinel headers
+  - [x] 10.1 Update `build_lodestar_prompt` in `app/lodestar/prompts.py`
     - Bump `CURRENT_PROMPT_VERSION` to `v2.0` (already done)
     - Instruct the model to emit exactly three headers: `Delivery Status:`, `Risks & Blockers:`, `Recommended Actions:`
     - Keep the total word limit at 180 words
     - _Requirements: 10.2_
 
-  - [ ] 10.2 Backend unit test for prompt headers
+  - [x] 10.2 Backend unit test for prompt headers
     - Verify that `build_lodestar_prompt` output contains the three sentinel headers
     - _Requirements: 10.2_
 
-- [ ] 11. Frontend `parseSections` utility
-  - [ ] 11.1 Create `dashboard/components/roadmap/parseSections.ts`
+- [x] 11. Frontend `parseSections` utility
+  - [x] 11.1 Create `dashboard/components/roadmap/parseSections.ts`
     - Implement `parseSections(raw: string): NarrativeSections`
     - Match headers case-insensitively in any order
     - Return fallback `{ deliveryStatus: raw.trim(), risksAndBlockers: "", recommendedActions: "" }` when no headers are found
     - _Requirements: 10.3, 10.5_
 
-  - [ ] 11.2 Unit tests for `parseSections`
+  - [x] 11.2 Unit tests for `parseSections`
     - All three sections parsed correctly
     - Missing headers fallback to `deliveryStatus`
     - Headers in random order parsed correctly
     - Empty sections handled gracefully
     - _Requirements: 10.3, 10.5_
 
-- [ ] 12. Frontend `useLodestarStream` hook
-  - [ ] 12.1 Create `dashboard/components/roadmap/useLodestarStream.ts`
+- [x] 12. Frontend `useLodestarStream` hook
+  - [x] 12.1 Create `dashboard/components/roadmap/useLodestarStream.ts`
     - Open `EventSource` to `GET /api/pis/{pi}/features/{feature_key}/lodestar`
     - Parse `meta`, `chunk`, `done`, and `error` SSE events
     - Maintain state machine: `idle` → `loading` → `streaming` → `complete` / `error`
@@ -268,41 +268,41 @@ This plan implements AI-generated delivery narratives for the WaypointPI Program
     - Abort connection and remove listeners on unmount or new stream start
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6_
 
-  - [ ] 12.2 Unit tests for `useLodestarStream`
+  - [x] 12.2 Unit tests for `useLodestarStream`
     - Normal stream transitions through all states and accumulates text
     - Error event transitions to `error` state
     - Unmount aborts the connection
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6_
 
-  - [ ] 12.3 fast-check property tests for `useLodestarStream`
+  - [x] 12.3 fast-check property tests for `useLodestarStream`
     - Property: state machine consistency for arbitrary event sequences
     - Property: accumulated text equals ordered concatenation of chunks
     - _Requirements: 11.7, 11.8_
 
-- [ ] 13. Structured `LodestarPanel` rendering
-  - [ ] 13.1 Update `dashboard/components/roadmap/LodestarPanel.tsx`
+- [x] 13. Structured `LodestarPanel` rendering
+  - [x] 13.1 Update `dashboard/components/roadmap/LodestarPanel.tsx`
     - Call `parseSections` on the narrative text
     - Render three sections with distinct visual styling when headers are present
     - Fall back to existing plain-text rendering when no headers are present
     - Keep the existing prop signature unchanged
     - _Requirements: 10.1, 10.4, 10.6_
 
-  - [ ] 13.2 Update `dashboard/components/roadmap/LodestarPanel.test.tsx`
+  - [x] 13.2 Update `dashboard/components/roadmap/LodestarPanel.test.tsx`
     - Test structured rendering when headers are present
     - Test plain-text fallback when headers are absent
     - Test section styling (colors, icons, or borders)
     - _Requirements: 10.1, 10.4, 10.6_
 
-- [ ] 14. fast-check property tests for `parseSections`
-  - [ ] 14.1 Add `dashboard/components/roadmap/parseSections.property.test.ts`
+- [x] 14. fast-check property tests for `parseSections`
+  - [x] 14.1 Add `dashboard/components/roadmap/parseSections.property.test.ts`
     - Property: deterministic output for the same input
     - Property: arbitrary header ordering produces correct sections
     - _Requirements: 10.3_
 
-- [ ] 15. Checkpoint — Frontend build and tests
-  - [ ] 15.1 Run `npm test` in `dashboard/`
+- [x] 15. Checkpoint — Frontend build and tests
+  - [x] 15.1 Run `npm test` in `dashboard/`
     - Confirm all existing and new tests pass
-  - [ ] 15.2 Run `npm run build` in `dashboard/`
+  - [x] 15.2 Run `npm run build` in `dashboard/`
     - Confirm no TypeScript or build errors
   - [ ] 15.3 Run end-to-end smoke test
     - Open a feature in the roadmap and verify the Lodestar panel streams and renders structured sections

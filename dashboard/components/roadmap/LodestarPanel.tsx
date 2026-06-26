@@ -1,66 +1,106 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatRelativeTime } from "../../lib/formatRelativeTime";
+import {
+  hasStructuredSections,
+  NarrativeSections,
+  parseSections,
+} from "./parseSections";
+import { useLodestarStream } from "./useLodestarStream";
 
 /**
  * LodestarPanel displays AI-generated delivery narrative text within the Detail Drawer.
  *
- * Shows "AI narrative not yet generated" placeholder when lodestar_static is null.
- * Provides a "Regenerate" button to trigger on-demand narrative regeneration.
+ * Supports:
+ *   - Rendering cached plain-text or structured narratives
+ *   - On-demand SSE streaming regeneration via the Lodestar endpoint
+ *   - Structured rendering of Delivery Status / Risks & Blockers / Recommended Actions
  *
- * Requirements: 7.6, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6
+ * Requirements: 7.6, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1, 10.3, 10.4, 10.6
  */
 
 interface LodestarPanelProps {
   text: string | null;
   featureKey: string;
   generatedAt?: string | null;
+  pi?: string | null;
 }
+
+const SECTION_STYLES: Record<keyof NarrativeSections, { border: string; icon: string }> = {
+  deliveryStatus: {
+    border: "var(--color-status-success)",
+    icon: "●",
+  },
+  risksAndBlockers: {
+    border: "var(--color-status-warning)",
+    icon: "⚠",
+  },
+  recommendedActions: {
+    border: "var(--color-interactive-secondary)",
+    icon: "→",
+  },
+};
+
+const SECTION_TITLES: Record<keyof NarrativeSections, string> = {
+  deliveryStatus: "Delivery Status",
+  risksAndBlockers: "Risks & Blockers",
+  recommendedActions: "Recommended Actions",
+};
 
 export default function LodestarPanel({
   text,
   featureKey,
   generatedAt,
+  pi,
 }: LodestarPanelProps) {
   const [narrativeText, setNarrativeText] = useState<string | null>(text);
   const [timestamp, setTimestamp] = useState<string | null>(
     generatedAt ?? null
   );
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleRegenerate() {
-    setIsLoading(true);
+  const { state, text: streamedText, error: streamError, start, reset } = useLodestarStream();
+
+  // Sync parent-provided text when it changes (e.g., drawer reopens).
+  useEffect(() => {
+    setNarrativeText(text);
+    setTimestamp(generatedAt ?? null);
     setError(null);
+    reset();
+  }, [text, generatedAt, reset]);
 
-    try {
-      const response = await fetch(
-        `/api/features/${featureKey}/narrative/generate`,
-        { method: "POST" }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        const message =
-          errorData?.detail ||
-          errorData?.error ||
-          `Regeneration failed (${response.status})`;
-        setError(message);
-        return;
-      }
-
-      const data = await response.json();
-      setNarrativeText(data.narrative_text);
-      setTimestamp(data.generated_at);
-    } catch (err) {
-      setError("Network error — unable to regenerate narrative.");
-    } finally {
-      setIsLoading(false);
+  // Finalize streamed text when the stream completes.
+  useEffect(() => {
+    if (state === "complete" && streamedText) {
+      setNarrativeText(streamedText);
+      setTimestamp(new Date().toISOString());
     }
+  }, [state, streamedText]);
+
+  // Surface stream errors.
+  useEffect(() => {
+    if (streamError) {
+      setError(streamError);
+    }
+  }, [streamError]);
+
+  const isLoading = state === "loading" || state === "streaming";
+
+  function handleRegenerate() {
+    setError(null);
+    const piName = pi ?? "26.2";
+    start(piName, featureKey);
   }
 
   const relativeTime = formatRelativeTime(timestamp);
+
+  const displayText = state === "streaming" || state === "complete"
+    ? streamedText || narrativeText
+    : narrativeText;
+
+  const sections = displayText ? parseSections(displayText) : null;
+  const structured = displayText ? hasStructuredSections(displayText) : false;
 
   return (
     <div
@@ -68,7 +108,7 @@ export default function LodestarPanel({
       aria-label="Lodestar Analysis"
       style={{
         padding: "12px 0",
-        borderTop: "1px solid #e2e8f0",
+        borderTop: "1px solid var(--color-border-default)",
       }}
     >
       <div
@@ -81,11 +121,11 @@ export default function LodestarPanel({
       >
         <h4
           style={{
-            fontSize: 12,
-            fontWeight: 600,
+            fontSize: "var(--font-size-label)",
+            fontWeight: "var(--font-weight-semi)",
             textTransform: "uppercase",
             letterSpacing: "0.05em",
-            color: "#64748b",
+            color: "var(--color-text-secondary)",
             margin: 0,
           }}
         >
@@ -98,12 +138,12 @@ export default function LodestarPanel({
           aria-busy={isLoading}
           aria-label="Regenerate narrative"
           style={{
-            fontSize: 11,
+            fontSize: "var(--font-size-label)",
             padding: "4px 10px",
-            borderRadius: 4,
-            border: "1px solid #cbd5e1",
-            background: isLoading ? "#f1f5f9" : "#ffffff",
-            color: isLoading ? "#94a3b8" : "#475569",
+            borderRadius: "var(--radius-md)",
+            border: "1px solid var(--color-border-default)",
+            background: isLoading ? "var(--color-fill-neutral)" : "var(--color-surface-card)",
+            color: isLoading ? "var(--color-text-tertiary)" : "var(--color-text-secondary)",
             cursor: isLoading ? "not-allowed" : "pointer",
             display: "flex",
             alignItems: "center",
@@ -118,8 +158,8 @@ export default function LodestarPanel({
                 display: "inline-block",
                 width: 10,
                 height: 10,
-                border: "2px solid #cbd5e1",
-                borderTopColor: "#475569",
+                border: "2px solid var(--color-border-default)",
+                borderTopColor: "var(--color-text-secondary)",
                 borderRadius: "50%",
                 animation: "spin 0.6s linear infinite",
               }}
@@ -129,26 +169,77 @@ export default function LodestarPanel({
         </button>
       </div>
 
-      {narrativeText ? (
-        <p
-          data-testid="lodestar-text"
-          style={{
-            fontSize: 13,
-            lineHeight: 1.5,
-            color: "#334155",
-            margin: 0,
-            whiteSpace: "pre-wrap",
-          }}
-        >
-          {narrativeText}
-        </p>
+      {displayText ? (
+        structured && sections ? (
+          <div data-testid="lodestar-structured">
+            {(Object.keys(SECTION_TITLES) as Array<keyof NarrativeSections>).map(
+              (key) => {
+                const body = sections[key];
+                if (!body) return null;
+                const style = SECTION_STYLES[key];
+                return (
+                  <div
+                    key={key}
+                    data-testid={`lodestar-section-${key}`}
+                    style={{
+                      marginBottom: 10,
+                      paddingLeft: 10,
+                      borderLeft: `3px solid ${style.border}`,
+                    }}
+                  >
+                    <h5
+                      style={{
+                        fontSize: "var(--font-size-label)",
+                        fontWeight: "var(--font-weight-semi)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.03em",
+                        color: style.border,
+                        margin: "0 0 4px 0",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <span aria-hidden="true">{style.icon}</span>
+                      {SECTION_TITLES[key]}
+                    </h5>
+                    <p
+                      style={{
+                        fontSize: "var(--font-size-body)",
+                        lineHeight: "var(--line-height-normal)",
+                        color: "var(--color-text-primary)",
+                        margin: 0,
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {body}
+                    </p>
+                  </div>
+                );
+              }
+            )}
+          </div>
+        ) : (
+          <p
+            data-testid="lodestar-text"
+            style={{
+              fontSize: "var(--font-size-body)",
+              lineHeight: "var(--line-height-normal)",
+              color: "var(--color-text-primary)",
+              margin: 0,
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            {displayText}
+          </p>
+        )
       ) : (
         <p
           data-testid="lodestar-placeholder"
           style={{
-            fontSize: 13,
-            lineHeight: 1.5,
-            color: "#9ca3af",
+            fontSize: "var(--font-size-body)",
+            lineHeight: "var(--line-height-normal)",
+            color: "var(--color-text-tertiary)",
             margin: 0,
             fontStyle: "italic",
           }}
@@ -162,8 +253,8 @@ export default function LodestarPanel({
           data-testid="regenerate-error"
           role="alert"
           style={{
-            fontSize: 12,
-            color: "#dc2626",
+            fontSize: "var(--font-size-caption)",
+            color: "var(--color-status-danger)",
             margin: "8px 0 0 0",
           }}
         >
@@ -175,8 +266,8 @@ export default function LodestarPanel({
         <p
           data-testid="generated-at"
           style={{
-            fontSize: 11,
-            color: "#94a3b8",
+            fontSize: "var(--font-size-label)",
+            color: "var(--color-text-tertiary)",
             margin: "6px 0 0 0",
           }}
         >

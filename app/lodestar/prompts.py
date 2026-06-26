@@ -35,11 +35,20 @@ def get_prompt_major_version(version: str | None) -> str:
 
 
 def build_lodestar_prompt(input: LodestarPromptInput) -> str:
-    """Build the LLM prompt for the Lodestar narrative stream."""
+    """Build the LLM prompt for the Lodestar narrative stream (v2.0).
+
+    v2.0 adds explicit sentinel headers so the frontend can parse the narrative
+    into three typed sections: Delivery Status, Risks & Blockers, and
+    Recommended Actions.
+    """
     blockers = input.is_blocked_by or input.blockers
     blocker_text = ", ".join(blockers) if blockers else "none"
 
-    return f"""You are a delivery intelligence assistant. Generate a concise 2-3 sentence narrative summarizing the delivery health, risks, and trajectory for a software feature.
+    return f"""You are a delivery intelligence assistant. Generate a concise delivery narrative for a software feature, structured into exactly three sections with these headers:
+
+Delivery Status:
+Risks & Blockers:
+Recommended Actions:
 
 Feature context:
 - Feature: {input.feature_key} — {input.summary}
@@ -49,4 +58,8 @@ Feature context:
 - Active blockers: {blocker_text}
 - Sprints remaining in PI: {input.sprints_remaining}
 
-Write exactly 2-3 sentences. Be direct, factual, and actionable. Mention risks if blockers exist or completion is low relative to remaining sprints. Do not use bullet points or headers."""
+Rules:
+- Use the three headers exactly as shown above.
+- Keep the entire response under 180 words.
+- Be direct, factual, and actionable.
+- Do not add extra sections or markdown formatting."""
