@@ -226,11 +226,11 @@ export function computeSlipScore(f: TransformedFeature, today: Date): number {
 }
 
 export function slipLabel(score: number, status: string, daysLeft: number): SlipInfo {
-  if (status === "Blocked") return { label: "Blocked", color: "#c0392b", bg: "#fdecea" };
-  if (daysLeft < 0) return { label: "Overdue", color: "#c0392b", bg: "#fdecea" };
-  if (score >= 55) return { label: "Will Slip", color: "#c0392b", bg: "#fdecea" };
-  if (score >= 25) return { label: "At Risk", color: "#d68910", bg: "#fef9e7" };
-  return { label: "On Track", color: "#1e8449", bg: "#eafaf1" };
+  if (status === "Blocked") return { label: "Blocked", color: "var(--color-status-danger)", bg: "var(--color-fill-danger)" };
+  if (daysLeft < 0) return { label: "Overdue", color: "var(--color-status-danger)", bg: "var(--color-fill-danger)" };
+  if (score >= 55) return { label: "Will Slip", color: "var(--color-status-danger)", bg: "var(--color-fill-danger)" };
+  if (score >= 25) return { label: "At Risk", color: "var(--color-status-warning)", bg: "var(--color-fill-warning)" };
+  return { label: "On Track", color: "var(--color-status-success)", bg: "var(--color-fill-success)" };
 }
 
 export function scoreFeaturesWithSlip(
@@ -291,8 +291,8 @@ export function computePIForecasts(
     const isPast = new Date(pi.end) < today;
     const isFuture = new Date(pi.start) > today;
 
-    if (isPast) return { ...pi, forecastStatus: "Complete", forecastColor: "#1e8449", mc: null };
-    if (isFuture) return { ...pi, forecastStatus: "Planned", forecastColor: "#2e86c1", mc: null };
+    if (isPast) return { ...pi, forecastStatus: "Complete", forecastColor: "var(--color-status-success)", mc: null };
+    if (isFuture) return { ...pi, forecastStatus: "Planned", forecastColor: "var(--color-interactive-secondary)", mc: null };
 
     // Current PI — run Monte Carlo
     const remainingWork = vStats.unit === "SP" && (vStats.totalAll ?? 0) > 0
@@ -320,8 +320,8 @@ export function computePIForecasts(
       : slipDays > 14 ? "Will Slip"
       : slipDays > 0 ? "At Risk"
       : "On Track";
-    const forecastColor = forecastStatus === "Will Slip" ? "#c0392b"
-      : forecastStatus === "At Risk" ? "#d68910" : "#1e8449";
+    const forecastColor = forecastStatus === "Will Slip" ? "var(--color-status-danger)"
+      : forecastStatus === "At Risk" ? "var(--color-status-warning)" : "var(--color-status-success)";
 
     return { ...pi, forecastStatus, forecastColor, mc: { p50End, p85End, slipDays } };
   });
@@ -341,13 +341,13 @@ export function buildVelocityChartData(sprintTimeline: SprintTimelineEntry[], vS
 // ─── Utility ────────────────────────────────────────────────────────────────
 
 export function healthColor(health: string): string {
-  return health === "green" ? "#1e8449" : health === "amber" ? "#d68910" : "#c0392b";
+  return health === "green" ? "var(--color-status-success)" : health === "amber" ? "var(--color-status-warning)" : "var(--color-status-danger)";
 }
 
 export const TEAM_COLORS: Record<string, string> = {
-  ISC: "#2e86c1",
-  TSU: "#7d3c98",
-  Panthers: "#1e8449",
-  IO: "#1a6ca8",
-  Other: "#566573",
+  ISC: "var(--color-interactive-secondary)",
+  TSU: "var(--color-brand-indigo)",
+  Panthers: "var(--color-status-success)",
+  IO: "var(--color-interactive-primary)",
+  Other: "var(--color-text-secondary)",
 };

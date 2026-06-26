@@ -101,27 +101,27 @@ export default function ForecastPage() {
   ];
 
   return (
-    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", background: "#f0f4f8", minHeight: "100vh" }}>
+    <div style={{ fontFamily: "var(--font-family-base)", background: "var(--color-surface-page)", minHeight: "100vh" }}>
 
       {/* Header */}
-      <div style={{ background: "#1a2b3c", padding: "16px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+      <div style={{ background: "var(--color-surface-card)", borderBottom: "1px solid var(--color-border-default)", padding: "16px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
         <div>
-          <div style={{ fontSize: 11, color: "#7fb3d3", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>Delivery intelligence</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: "#fff" }}>📈 Forecast &amp; Predictive Analytics</div>
+          <div style={{ fontSize: "var(--font-size-label)", color: "var(--color-text-secondary)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>Delivery intelligence</div>
+          <div style={{ fontSize: "var(--font-size-h2)", fontWeight: 700, color: "var(--color-text-primary)" }}>📈 Forecast &amp; Predictive Analytics</div>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <DataSourceBadge source={dataSource} />
-          {lastRefresh && <div style={{ background: "#2e4057", borderRadius: 6, padding: "5px 12px", fontSize: 11, color: "#a8c4d8" }}>🕐 {lastRefresh.toLocaleTimeString()}</div>}
-          <button onClick={loadData} style={{ background: "#2e4057", border: "1px solid #4a6080", borderRadius: 6, padding: "5px 14px", fontSize: 12, color: "#a8c4d8", cursor: "pointer", fontWeight: 600 }}>⟳ Refresh</button>
+          {lastRefresh && <div style={{ background: "var(--color-surface-card)", borderRadius: 6, padding: "5px 12px", fontSize: "var(--font-size-label)", color: "var(--color-text-secondary)" }}>🕐 {lastRefresh.toLocaleTimeString()}</div>}
+          <button onClick={loadData} style={{ minHeight: 44, background: "var(--color-fill-neutral)", border: "1px solid var(--color-border-strong)", borderRadius: 6, padding: "5px 14px", fontSize: "var(--font-size-caption)", color: "var(--color-text-secondary)", cursor: "pointer", fontWeight: 600 }}>⟳ Refresh</button>
         </div>
       </div>
 
-      {error && <div style={{ background: "#fef9e7", borderBottom: "1px solid #f9e4b7", padding: "10px 28px", fontSize: 12, color: "#7d6608" }}>⚠️ {error}</div>}
+      {error && <div style={{ background: "var(--color-fill-warning)", borderBottom: "1px solid var(--color-status-warning)", padding: "10px 28px", fontSize: "var(--font-size-caption)", color: "var(--color-status-warning)" }}>⚠️ {error}</div>}
 
       {/* Tabs */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #dce3ea", padding: "0 28px", display: "flex" }}>
+      <div style={{ background: "var(--color-surface-card)", borderBottom: "1px solid var(--color-border-default)", padding: "0 28px", display: "flex" }}>
         {tabs.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: "12px 20px", fontSize: 13, fontWeight: 600, color: activeTab === t.id ? "#1a6ca8" : "#5a6a7a", borderBottom: activeTab === t.id ? "2px solid #1a6ca8" : "2px solid transparent" }}>{t.label}</button>
+          <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ minHeight: 44, background: "none", border: "none", cursor: "pointer", padding: "12px 20px", fontSize: "var(--font-size-body)", fontWeight: 600, color: activeTab === t.id ? "var(--color-interactive-primary)" : "var(--color-text-secondary)", borderBottom: activeTab === t.id ? "2px solid var(--color-interactive-primary)" : "2px solid transparent" }}>{t.label}</button>
         ))}
       </div>
 
@@ -139,14 +139,14 @@ export default function ForecastPage() {
                   vStats.source === "sprint-SP" ? `${vStats.count} sprints w/ SP` :
                   vStats.source === "PI-SP" ? `${vStats.count} PI(s) SP total` :
                   vStats.source === "PI-issues" ? `${vStats.count} PI(s) issue count` :
-                  "default estimate"}`} color={vStats.source === "manual-override" ? "#d68910" : "#1a6ca8"} />
-                <StatPill label="Features At Risk" value={atRiskCount} sub={`of ${features.length}`} color="#d68910" />
-                <StatPill label="Blocked" value={blockedCount} sub="features" color="#c0392b" />
+                  "default estimate"}`} color={vStats.source === "manual-override" ? "var(--color-status-warning)" : "var(--color-interactive-primary)"} />
+                <StatPill label="Features At Risk" value={atRiskCount} sub={`of ${features.length}`} color="var(--color-status-warning)" />
+                <StatPill label="Blocked" value={blockedCount} sub="features" color="var(--color-status-danger)" />
               </div>
 
               {/* Velocity override control */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, background: "#fff", border: "1px solid #dce3ea", borderRadius: 8, padding: "10px 16px", flexWrap: "wrap" }}>
-                <span style={{ fontSize: 12, color: "#5a6a7a", fontWeight: 600 }}>Velocity Override</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, background: "var(--color-surface-card)", border: "1px solid var(--color-border-default)", borderRadius: 8, padding: "10px 16px", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "var(--font-size-caption)", color: "var(--color-text-secondary)", fontWeight: 600 }}>Velocity Override</span>
                 <input
                   type="number"
                   min="0.1"
@@ -154,13 +154,13 @@ export default function ForecastPage() {
                   placeholder={`Calculated: ${vStatsRaw.mean}`}
                   value={velocityOverride}
                   onChange={e => setVelocityOverride(e.target.value)}
-                  style={{ width: 130, padding: "5px 10px", fontSize: 13, border: "1px solid #dce3ea", borderRadius: 6, color: "#1a2b3c", outline: "none" }}
+                  style={{ width: 130, padding: "5px 10px", fontSize: "var(--font-size-body)", border: "1px solid var(--color-border-default)", borderRadius: 6, color: "var(--color-text-primary)", outline: "none" }}
                 />
-                <span style={{ fontSize: 12, color: "#7a8a99" }}>{vStats.unit}/sprint</span>
+                <span style={{ fontSize: "var(--font-size-caption)", color: "var(--color-text-secondary)" }}>{vStats.unit}/sprint</span>
                 {velocityOverride && (
-                  <button onClick={() => setVelocityOverride("")} style={{ background: "#fdecea", border: "1px solid #f5c6c6", borderRadius: 6, padding: "4px 10px", fontSize: 11, color: "#c0392b", cursor: "pointer", fontWeight: 600 }}>✕ Clear</button>
+                  <button onClick={() => setVelocityOverride("")} style={{ background: "var(--color-fill-danger)", border: "1px solid var(--color-status-danger)", borderRadius: 6, padding: "4px 10px", fontSize: "var(--font-size-label)", color: "var(--color-status-danger)", cursor: "pointer", fontWeight: 600 }}>✕ Clear</button>
                 )}
-                <span style={{ fontSize: 11, color: velocityOverride ? "#d68910" : "#7a8a99", marginLeft: 4 }}>
+                <span style={{ fontSize: "var(--font-size-label)", color: velocityOverride ? "var(--color-status-warning)" : "var(--color-text-secondary)", marginLeft: 4 }}>
                   {velocityOverride
                     ? `⚠ Using manual override (calculated: ${vStatsRaw.mean})`
                     : `Using calculated velocity from ${vStatsRaw.source === "sprint-SP" ? `${vStatsRaw.count} sprints` : vStatsRaw.source === "PI-issues" ? `${vStatsRaw.count} PI(s)` : "default estimate"}`}
@@ -214,51 +214,51 @@ export default function ForecastPage() {
 
 function PIForecastCard({ pi }: { pi: PIForecast }) {
   return (
-    <div style={{ background: "#fff", border: "1px solid #dce3ea", borderRadius: 10, overflow: "hidden", borderTop: `3px solid ${pi.forecastColor}` }}>
+    <div style={{ background: "var(--color-surface-card)", border: "1px solid var(--color-border-default)", borderRadius: 10, overflow: "hidden", borderTop: `3px solid ${pi.forecastColor}` }}>
       <div style={{ padding: "14px 18px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#1a2b3c" }}>{pi.name}</div>
-            <div style={{ fontSize: 11, color: "#7a8a99", marginTop: 2 }}>{formatDate(pi.start)} → {formatDate(pi.end)}</div>
+            <div style={{ fontSize: "var(--font-size-h3)", fontWeight: 700, color: "var(--color-text-primary)" }}>{pi.name}</div>
+            <div style={{ fontSize: "var(--font-size-label)", color: "var(--color-text-secondary)", marginTop: 2 }}>{formatDate(pi.start)} → {formatDate(pi.end)}</div>
           </div>
-          <span style={{ background: pi.forecastColor + "18", color: pi.forecastColor, border: `1px solid ${pi.forecastColor}40`, borderRadius: 12, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{pi.forecastStatus}</span>
+          <span style={{ background: pi.forecastColor, color: "var(--color-text-inverse)", border: `1px solid ${pi.forecastColor}`, borderRadius: 12, padding: "3px 10px", fontSize: "var(--font-size-label)", fontWeight: 700 }}>{pi.forecastStatus}</span>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-          <span style={{ fontSize: 11, color: "#7a8a99" }}>API Health</span>
-          <span style={{ background: healthColor(pi.health) + "18", color: healthColor(pi.health), border: `1px solid ${healthColor(pi.health)}30`, borderRadius: 10, padding: "1px 8px", fontSize: 11, fontWeight: 700, textTransform: "capitalize" }}>{pi.health}</span>
-          {pi.criticalFindings > 0 && <span style={{ fontSize: 11, color: "#c0392b" }}>⚠ {pi.criticalFindings} critical finding{pi.criticalFindings > 1 ? "s" : ""}</span>}
+          <span style={{ fontSize: "var(--font-size-label)", color: "var(--color-text-secondary)" }}>API Health</span>
+          <span style={{ background: healthColor(pi.health), color: "var(--color-text-inverse)", border: `1px solid ${healthColor(pi.health)}`, borderRadius: 10, padding: "1px 8px", fontSize: "var(--font-size-label)", fontWeight: 700, textTransform: "capitalize" }}>{pi.health}</span>
+          {pi.criticalFindings > 0 && <span style={{ fontSize: "var(--font-size-label)", color: "var(--color-status-danger)" }}>⚠ {pi.criticalFindings} critical finding{pi.criticalFindings > 1 ? "s" : ""}</span>}
         </div>
 
         <div style={{ marginBottom: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-            <span style={{ fontSize: 11, color: "#7a8a99" }}>Issue Progress</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#1a2b3c" }}>{pi.issuesDone}/{pi.issuesTotal} ({Math.round(pi.pctComplete)}%)</span>
+            <span style={{ fontSize: "var(--font-size-label)", color: "var(--color-text-secondary)" }}>Issue Progress</span>
+            <span style={{ fontSize: "var(--font-size-label)", fontWeight: 700, color: "var(--color-text-primary)" }}>{pi.issuesDone}/{pi.issuesTotal} ({Math.round(pi.pctComplete)}%)</span>
           </div>
-          <div style={{ background: "#edf2f7", borderRadius: 4, height: 8, overflow: "hidden" }}>
+          <div style={{ background: "var(--color-fill-neutral)", borderRadius: 4, height: 8, overflow: "hidden" }}>
             <div style={{ width: `${Math.min(pi.pctComplete, 100)}%`, background: pi.forecastColor, height: "100%", borderRadius: 4 }} />
           </div>
         </div>
 
-        <div style={{ fontSize: 12, color: "#5a6a7a", marginBottom: 10 }}>
+        <div style={{ fontSize: "var(--font-size-caption)", color: "var(--color-text-secondary)", marginBottom: 10 }}>
           🚫 {pi.issuesBlocked} blocked &nbsp;·&nbsp; {pi.sprints.length} sprints
         </div>
 
         {pi.mc && (
-          <div style={{ background: "#f7fafc", border: "1px solid #dce3ea", borderRadius: 6, padding: "10px 12px" }}>
-            <div style={{ fontSize: 10, color: "#7a8a99", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Monte Carlo · 2,000 simulations</div>
+          <div style={{ background: "var(--color-fill-neutral)", border: "1px solid var(--color-border-default)", borderRadius: 6, padding: "10px 12px" }}>
+            <div style={{ fontSize: "var(--font-size-label)", color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Monte Carlo · 2,000 simulations</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {[
-                { label: "P50 — likely", val: formatDate(pi.mc.p50End), color: "#1e8449" },
-                { label: "P85 — cautious", val: formatDate(pi.mc.p85End), color: "#d68910" },
+                { label: "P50 — likely", val: formatDate(pi.mc.p50End), color: "var(--color-status-success)" },
+                { label: "P85 — cautious", val: formatDate(pi.mc.p85End), color: "var(--color-status-warning)" },
               ].map(({ label, val, color }) => (
-                <div key={label} style={{ background: "#fff", border: `1px solid ${color}30`, borderRadius: 5, padding: "6px 8px", textAlign: "center" }}>
-                  <div style={{ fontSize: 10, color, fontWeight: 700 }}>{label}</div>
-                  <div style={{ fontSize: 12, color: "#1a2b3c", fontWeight: 600, marginTop: 2 }}>{val}</div>
+                <div key={label} style={{ background: "var(--color-surface-card)", border: `1px solid ${color}`, borderRadius: 5, padding: "6px 8px", textAlign: "center" }}>
+                  <div style={{ fontSize: "var(--font-size-label)", color, fontWeight: 700 }}>{label}</div>
+                  <div style={{ fontSize: "var(--font-size-caption)", color: "var(--color-text-primary)", fontWeight: 600, marginTop: 2 }}>{val}</div>
                 </div>
               ))}
             </div>
-            {pi.mc.slipDays > 0 && <div style={{ fontSize: 11, color: "#c0392b", marginTop: 8, fontWeight: 600 }}>⚠ P50 projects {pi.mc.slipDays}d past planned end</div>}
+            {pi.mc.slipDays > 0 && <div style={{ fontSize: "var(--font-size-label)", color: "var(--color-status-danger)", marginTop: 8, fontWeight: 600 }}>⚠ P50 projects {pi.mc.slipDays}d past planned end</div>}
           </div>
         )}
       </div>
@@ -270,68 +270,68 @@ function VelocityTab({ vStats, velocityChartData, sprintTimeline }: { vStats: Ve
   return (
     <div>
       <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
-        <StatPill label="Mean Velocity" value={`${vStats.mean}`} sub={`${vStats.unit}/sprint · ${vStats.count} sprints measured`} color="#1a6ca8" />
+        <StatPill label="Mean Velocity" value={`${vStats.mean}`} sub={`${vStats.unit}/sprint · ${vStats.count} sprints measured`} color="var(--color-interactive-primary)" />
         <StatPill label="Std Deviation" value={`±${vStats.stdDev}`} sub="sprint variability" />
-        <StatPill label="Best Sprint" value={vStats.max ?? "—"} color="#1e8449" />
-        <StatPill label="Worst Sprint" value={vStats.min ?? "—"} color="#c0392b" />
+        <StatPill label="Best Sprint" value={vStats.max ?? "—"} color="var(--color-status-success)" />
+        <StatPill label="Worst Sprint" value={vStats.min ?? "—"} color="var(--color-status-danger)" />
       </div>
 
       <SectionHeader title="Sprint Velocity — Actuals + Projection" subtitle="Issues completed per sprint. Dashed = projected at mean velocity." />
-      <div style={{ background: "#fff", border: "1px solid #dce3ea", borderRadius: 10, padding: "20px 16px", marginBottom: 24 }}>
+      <div style={{ background: "var(--color-surface-card)", border: "1px solid var(--color-border-default)", borderRadius: 10, padding: "20px 16px", marginBottom: 24 }}>
         {velocityChartData.length === 0
-          ? <div style={{ textAlign: "center", padding: 40, color: "#7a8a99", fontSize: 13 }}>No sprint data — upload a Stories CSV via <strong>/admin</strong>.</div>
+          ? <div style={{ textAlign: "center", padding: 40, color: "var(--color-text-secondary)", fontSize: "var(--font-size-body)" }}>No sprint data — upload a Stories CSV via <strong>/admin</strong>.</div>
           : (
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={velocityChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#1a6ca8" stopOpacity={0.18} /><stop offset="95%" stopColor="#1a6ca8" stopOpacity={0} /></linearGradient>
-                  <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#7fb3d3" stopOpacity={0.12} /><stop offset="95%" stopColor="#7fb3d3" stopOpacity={0} /></linearGradient>
+                  <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--color-interactive-primary)" stopOpacity={0.18} /><stop offset="95%" stopColor="var(--color-interactive-primary)" stopOpacity={0} /></linearGradient>
+                  <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--color-text-secondary)" stopOpacity={0.12} /><stop offset="95%" stopColor="var(--color-text-secondary)" stopOpacity={0} /></linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#edf2f7" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#7a8a99" }} />
-                <YAxis tick={{ fontSize: 10, fill: "#7a8a99" }} domain={[0, "auto"]} />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 6, border: "1px solid #dce3ea" }} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <ReferenceLine y={vStats.mean} stroke="#1a6ca8" strokeDasharray="4 4" label={{ value: `Avg ${vStats.mean}`, fontSize: 10, fill: "#1a6ca8", position: "right" }} />
-                <Area type="monotone" dataKey="actual" name="Actual" stroke="#1a6ca8" strokeWidth={2} fill="url(#ag)" dot={{ r: 4, fill: "#1a6ca8" }} connectNulls={false} />
-                <Area type="monotone" dataKey="projected" name="Projected" stroke="#7fb3d3" strokeWidth={2} strokeDasharray="5 4" fill="url(#pg)" dot={{ r: 3, fill: "#7fb3d3" }} connectNulls={false} />
-                <Area type="monotone" dataKey="planned" name="Planned" stroke="#d68910" strokeWidth={1.5} strokeDasharray="2 3" fill="none" dot={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-fill-neutral)" />
+                <XAxis dataKey="name" tick={{ fontSize: "var(--font-size-label)", fill: "var(--color-text-secondary)" }} />
+                <YAxis tick={{ fontSize: "var(--font-size-label)", fill: "var(--color-text-secondary)" }} domain={[0, "auto"]} />
+                <Tooltip contentStyle={{ fontSize: "var(--font-size-caption)", borderRadius: 6, border: "1px solid var(--color-border-default)" }} />
+                <Legend wrapperStyle={{ fontSize: "var(--font-size-caption)" }} />
+                <ReferenceLine y={vStats.mean} stroke="var(--color-interactive-primary)" strokeDasharray="4 4" label={{ value: `Avg ${vStats.mean}`, fontSize: "var(--font-size-label)", fill: "var(--color-interactive-primary)", position: "right" }} />
+                <Area type="monotone" dataKey="actual" name="Actual" stroke="var(--color-interactive-primary)" strokeWidth={2} fill="url(#ag)" dot={{ r: 4, fill: "var(--color-interactive-primary)" }} connectNulls={false} />
+                <Area type="monotone" dataKey="projected" name="Projected" stroke="var(--color-text-secondary)" strokeWidth={2} strokeDasharray="5 4" fill="url(#pg)" dot={{ r: 3, fill: "var(--color-text-secondary)" }} connectNulls={false} />
+                <Area type="monotone" dataKey="planned" name="Planned" stroke="var(--color-status-warning)" strokeWidth={1.5} strokeDasharray="2 3" fill="none" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           )}
       </div>
 
       <SectionHeader title="Sprint-by-Sprint Breakdown" />
-      <div style={{ background: "#fff", border: "1px solid #dce3ea", borderRadius: 10, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+      <div style={{ background: "var(--color-surface-card)", border: "1px solid var(--color-border-default)", borderRadius: 10, overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--font-size-body)" }}>
           <thead>
-            <tr style={{ background: "#f7fafc", borderBottom: "1px solid #dce3ea" }}>
+            <tr style={{ background: "var(--color-fill-neutral)", borderBottom: "1px solid var(--color-border-default)" }}>
               {["Sprint", "PI", "State", "Issues Done", "Issues Total", "% Complete"].map(h => (
-                <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#5a6a7a", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: "var(--font-size-label)", fontWeight: 700, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {sprintTimeline.map(s => (
-              <tr key={s.name} style={{ borderBottom: "1px solid #f0f4f8", background: s.state === "future" ? "#fafcfe" : "#fff" }}>
-                <td style={{ padding: "10px 16px", fontWeight: 600, color: s.state === "future" ? "#7a8a99" : "#1a2b3c" }}>{s.name}</td>
-                <td style={{ padding: "10px 16px", fontSize: 12, color: "#7a8a99" }}>{s.piName}</td>
+              <tr key={s.name} style={{ borderBottom: "1px solid var(--color-surface-page)", background: s.state === "future" ? "var(--color-fill-info)" : "var(--color-surface-card)" }}>
+                <td style={{ padding: "10px 16px", fontWeight: 600, color: s.state === "future" ? "var(--color-text-secondary)" : "var(--color-text-primary)" }}>{s.name}</td>
+                <td style={{ padding: "10px 16px", fontSize: "var(--font-size-caption)", color: "var(--color-text-secondary)" }}>{s.piName}</td>
                 <td style={{ padding: "10px 16px" }}>
-                  <span style={{ background: s.state === "closed" ? "#eafaf1" : s.state === "active" ? "#ebf5fb" : "#edf2f7", color: s.state === "closed" ? "#1e8449" : s.state === "active" ? "#1a6ca8" : "#5a6a7a", borderRadius: 10, padding: "2px 8px", fontSize: 11 }}>
+                  <span style={{ background: s.state === "closed" ? "var(--color-fill-success)" : s.state === "active" ? "var(--color-fill-info)" : "var(--color-fill-neutral)", color: s.state === "closed" ? "var(--color-status-success)" : s.state === "active" ? "var(--color-interactive-primary)" : "var(--color-text-secondary)", borderRadius: 10, padding: "2px 8px", fontSize: "var(--font-size-label)" }}>
                     {s.state}
                   </span>
                 </td>
-                <td style={{ padding: "10px 16px", fontWeight: 600 }}>{s.state !== "future" ? s.done : <span style={{ color: "#b0bec5" }}>—</span>}</td>
-                <td style={{ padding: "10px 16px", color: "#5a6a7a" }}>{s.total || <span style={{ color: "#b0bec5" }}>{Math.round(vStats.mean)} est.</span>}</td>
+                <td style={{ padding: "10px 16px", fontWeight: 600 }}>{s.state !== "future" ? s.done : <span style={{ color: "var(--color-text-tertiary)" }}>—</span>}</td>
+                <td style={{ padding: "10px 16px", color: "var(--color-text-secondary)" }}>{s.total || <span style={{ color: "var(--color-text-tertiary)" }}>{Math.round(vStats.mean)} est.</span>}</td>
                 <td style={{ padding: "10px 16px" }}>
                   {s.state !== "future"
-                    ? <span style={{ color: s.pct >= 80 ? "#1e8449" : s.pct >= 50 ? "#d68910" : "#c0392b", fontWeight: 600 }}>{Math.round(s.pct)}%</span>
-                    : <span style={{ color: "#b0bec5" }}>—</span>}
+                    ? <span style={{ color: s.pct >= 80 ? "var(--color-status-success)" : s.pct >= 50 ? "var(--color-status-warning)" : "var(--color-status-danger)", fontWeight: 600 }}>{Math.round(s.pct)}%</span>
+                    : <span style={{ color: "var(--color-text-tertiary)" }}>—</span>}
                 </td>
               </tr>
             ))}
             {sprintTimeline.length === 0 && (
-              <tr><td colSpan={6} style={{ padding: "32px", textAlign: "center", color: "#7a8a99", fontSize: 13 }}>No sprint data — upload a Stories CSV via <strong>/admin</strong>.</td></tr>
+              <tr><td colSpan={6} style={{ padding: "32px", textAlign: "center", color: "var(--color-text-secondary)", fontSize: "var(--font-size-body)" }}>No sprint data — upload a Stories CSV via <strong>/admin</strong>.</td></tr>
             )}
           </tbody>
         </table>
@@ -344,14 +344,14 @@ function FeatureSlipTab({ scoredFeatures, features, blockedCount, sortBy, setSor
   return (
     <div>
       <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
-        <StatPill label="Will Slip" value={scoredFeatures.filter(f => f.slip.label === "Will Slip").length} color="#c0392b" />
-        <StatPill label="At Risk" value={scoredFeatures.filter(f => f.slip.label === "At Risk").length} color="#d68910" />
-        <StatPill label="Blocked" value={blockedCount} color="#c0392b" />
-        <StatPill label="On Track" value={scoredFeatures.filter(f => f.slip.label === "On Track").length} color="#1e8449" />
+        <StatPill label="Will Slip" value={scoredFeatures.filter(f => f.slip.label === "Will Slip").length} color="var(--color-status-danger)" />
+        <StatPill label="At Risk" value={scoredFeatures.filter(f => f.slip.label === "At Risk").length} color="var(--color-status-warning)" />
+        <StatPill label="Blocked" value={blockedCount} color="var(--color-status-danger)" />
+        <StatPill label="On Track" value={scoredFeatures.filter(f => f.slip.label === "On Track").length} color="var(--color-status-success)" />
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-          <span style={{ fontSize: 12, color: "#7a8a99" }}>Sort:</span>
+          <span style={{ fontSize: "var(--font-size-caption)", color: "var(--color-text-secondary)" }}>Sort:</span>
           {([["slip", "Slip Score"], ["date", "Due Date"], ["pct", "% Done"]] as const).map(([val, lbl]) => (
-            <button key={val} onClick={() => setSortBy(val)} style={{ background: sortBy === val ? "#1a6ca8" : "#fff", color: sortBy === val ? "#fff" : "#5a6a7a", border: `1px solid ${sortBy === val ? "#1a6ca8" : "#dce3ea"}`, borderRadius: 6, padding: "5px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>{lbl}</button>
+            <button key={val} onClick={() => setSortBy(val)} style={{ minHeight: 44, background: sortBy === val ? "var(--color-interactive-primary)" : "var(--color-surface-card)", color: sortBy === val ? "var(--color-text-inverse)" : "var(--color-text-secondary)", border: `1px solid ${sortBy === val ? "var(--color-interactive-primary)" : "var(--color-border-default)"}`, borderRadius: 6, padding: "var(--space-1) var(--space-3)", fontSize: "var(--font-size-caption)", cursor: "pointer", fontWeight: 600 }}>{lbl}</button>
           ))}
         </div>
       </div>
@@ -359,7 +359,7 @@ function FeatureSlipTab({ scoredFeatures, features, blockedCount, sortBy, setSor
       <SectionHeader title="Feature Slip Risk Analysis" subtitle="Score = (expected % done − actual % done) × urgency. Source: Roadmap XLSX via /admin." />
 
       {scoredFeatures.length === 0
-        ? <div style={{ background: "#fff", border: "1px solid #dce3ea", borderRadius: 10, padding: 40, textAlign: "center", color: "#7a8a99" }}>No features with planned dates. Upload a Roadmap XLSX via <strong>/admin</strong>.</div>
+        ? <div style={{ background: "var(--color-surface-card)", border: "1px solid var(--color-border-default)", borderRadius: 10, padding: 40, textAlign: "center", color: "var(--color-text-secondary)" }}>No features with planned dates. Upload a Roadmap XLSX via <strong>/admin</strong>.</div>
         : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {scoredFeatures.map(f => (
@@ -373,47 +373,47 @@ function FeatureSlipTab({ scoredFeatures, features, blockedCount, sortBy, setSor
 
 function FeatureSlipCard({ feature: f }: { feature: ScoredFeature }) {
   return (
-    <div style={{ background: "#fff", border: "1px solid #dce3ea", borderRadius: 10, overflow: "hidden", borderLeft: `4px solid ${f.slip.color}` }}>
+    <div style={{ background: "var(--color-surface-card)", border: "1px solid var(--color-border-default)", borderRadius: 10, overflow: "hidden", borderLeft: `4px solid ${f.slip.color}` }}>
       <div style={{ padding: "14px 18px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8, gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4, flexWrap: "wrap" }}>
-              <span style={{ background: (TEAM_COLORS[f.team] || "#566573") + "18", color: TEAM_COLORS[f.team] || "#566573", border: `1px solid ${(TEAM_COLORS[f.team] || "#566573")}30`, borderRadius: 10, padding: "1px 8px", fontSize: 10, fontWeight: 700 }}>{f.team}</span>
-              <span style={{ fontSize: 11, color: "#7a8a99" }}>{f.key}</span>
+              <span style={{ background: TEAM_COLORS[f.team] || "var(--color-text-secondary)", color: "var(--color-text-inverse)", border: `1px solid ${TEAM_COLORS[f.team] || "var(--color-text-secondary)"}`, borderRadius: 10, padding: "1px 8px", fontSize: "var(--font-size-label)", fontWeight: 700 }}>{f.team}</span>
+              <span style={{ fontSize: "var(--font-size-label)", color: "var(--color-text-secondary)" }}>{f.key}</span>
             </div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#1a2b3c", marginBottom: 2 }}>{f.name}</div>
-            <div style={{ fontSize: 11, color: "#7a8a99" }}>
+            <div style={{ fontSize: "var(--font-size-body)", fontWeight: 700, color: "var(--color-text-primary)", marginBottom: 2 }}>{f.name}</div>
+            <div style={{ fontSize: "var(--font-size-label)", color: "var(--color-text-secondary)" }}>
               {formatDate(f.plannedStart)} → {formatDate(f.plannedEnd)} · {f.assignee}
               {f.daysLeft >= 0 ? ` · ${f.daysLeft}d remaining` : ` · ${Math.abs(f.daysLeft)}d overdue`}
             </div>
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexShrink: 0 }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 9, color: "#7a8a99", textTransform: "uppercase", letterSpacing: "0.05em" }}>Slip Score</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: f.slip.color, lineHeight: 1.1 }}>{f.score}</div>
+              <div style={{ fontSize: "var(--font-size-label)", color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Slip Score</div>
+              <div style={{ fontSize: "var(--font-size-h2)", fontWeight: 800, color: f.slip.color, lineHeight: 1.1 }}>{f.score}</div>
             </div>
-            <span style={{ background: f.slip.bg, color: f.slip.color, border: `1px solid ${f.slip.color}40`, borderRadius: 12, padding: "4px 12px", fontSize: 12, fontWeight: 700 }}>{f.slip.label}</span>
+            <span style={{ background: f.slip.bg, color: f.slip.color, border: `1px solid ${f.slip.color}`, borderRadius: 12, padding: "4px 12px", fontSize: "var(--font-size-caption)", fontWeight: 700 }}>{f.slip.label}</span>
           </div>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 10 }}>
           {[
-            { label: "Expected % Done", pct: f.expectedPct, color: "#7a8a99" },
-            { label: "Actual % Done", pct: Math.round(f.pctComplete), color: "#1a6ca8" },
+            { label: "Expected % Done", pct: f.expectedPct, color: "var(--color-text-secondary)" },
+            { label: "Actual % Done", pct: Math.round(f.pctComplete), color: "var(--color-interactive-primary)" },
           ].map(({ label, pct, color }) => (
             <div key={label}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                <span style={{ fontSize: 11, color: "#7a8a99" }}>{label}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color }}>{pct}%</span>
+                <span style={{ fontSize: "var(--font-size-label)", color: "var(--color-text-secondary)" }}>{label}</span>
+                <span style={{ fontSize: "var(--font-size-label)", fontWeight: 700, color }}>{pct}%</span>
               </div>
-              <div style={{ background: "#edf2f7", borderRadius: 4, height: 6, overflow: "hidden" }}>
+              <div style={{ background: "var(--color-fill-neutral)", borderRadius: 4, height: 6, overflow: "hidden" }}>
                 <div style={{ width: `${Math.min(pct, 100)}%`, background: color, height: "100%", borderRadius: 4 }} />
               </div>
             </div>
           ))}
         </div>
 
-        <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#5a6a7a" }}>
+        <div style={{ display: "flex", gap: 16, fontSize: "var(--font-size-caption)", color: "var(--color-text-secondary)" }}>
           <span>📝 {f.storiesDone}/{f.storiesTotal} stories</span>
           <span style={{ color: f.slip.color }}>● {f.status}</span>
         </div>
