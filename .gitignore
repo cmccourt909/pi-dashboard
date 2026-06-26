@@ -15,3 +15,19 @@ infra/.terraform.lock.hcl
 infra/terraform.tfstate
 infra/terraform.tfstate.backup
 infra/terraform.tfvars
+
+# Reference docs (source materials, not code)
+*.docx
+*.zip
+northline.jpeg
+WaypointPI_Roadmap.html
+WaypointPI_UI_Analysis_Index.md
+WaypointPI-Phase2-Spec-v1.0.md
+Northline_Branding_Spec_v1.0.md
+Northline_Branding_Spec_v1.1.md
+files/
+debugwayport.md
+remaining.md
+project-tree.txt
+test_app.db
+tests/test_app.db
