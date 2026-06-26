@@ -88,7 +88,7 @@ export default function AdminPage() {
     <div style={{ maxWidth: 720, margin: "0 auto" }}>
       {/* Header */}
       <div style={{ marginBottom: "var(--space-8)" }}>
-        <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-muted)", marginBottom: "var(--space-1)" }}>
+        <p style={{ fontSize: "var(--font-size-label)", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-secondary)", marginBottom: "var(--space-1)" }}>
           Administration
         </p>
         <h1>Data upload</h1>
@@ -99,7 +99,7 @@ export default function AdminPage() {
 
       {/* Upload key */}
       <div style={{ marginBottom: "var(--space-5)" }}>
-        <label style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-muted)", display: "block", marginBottom: 6 }}>
+        <label style={{ fontSize: "var(--font-size-label)", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-secondary)", display: "block", marginBottom: 6 }}>
           Upload API key
         </label>
         <input
@@ -109,13 +109,14 @@ export default function AdminPage() {
           onChange={(e) => setUploadKey(e.target.value)}
           style={{
             width: "100%",
-            padding: "8px 12px",
+            minHeight: 44,
+            padding: "var(--space-2) var(--space-3)",
             fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            border: "0.5px solid var(--color-border)",
+            fontSize: "var(--font-size-caption)",
+            border: "0.5px solid var(--color-border-default)",
             borderRadius: "var(--radius-md)",
-            background: "#FFFFFF",
-            color: "var(--color-text)",
+            background: "var(--color-surface-card)",
+            color: "var(--color-text-primary)",
           }}
         />
       </div>
@@ -127,39 +128,39 @@ export default function AdminPage() {
         onDrop={onDrop}
         onClick={() => inputRef.current?.click()}
         style={{
-          border: `2px dashed ${dragOver ? "var(--color-accent)" : "var(--color-border-em)"}`,
+          border: `2px dashed ${dragOver ? "var(--color-interactive-primary)" : "var(--color-border-strong)"}`,
           borderRadius: "var(--radius-lg)",
           padding: "48px var(--space-8)",
           textAlign: "center",
           cursor: "pointer",
-          background: dragOver ? "var(--color-accent-light)" : "#FFFFFF",
+          background: dragOver ? "var(--color-fill-info)" : "var(--color-surface-card)",
           transition: "border-color 0.15s, background 0.15s",
           marginBottom: "var(--space-5)",
         }}
       >
         <input ref={inputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }} onChange={onFileChange} />
         {state === "uploading" ? (
-          <p style={{ color: "var(--color-text-muted)", fontSize: 13 }}>Uploading…</p>
+          <p style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-body)" }}>Uploading…</p>
         ) : (
           <>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style={{ margin: "0 auto var(--space-3)", display: "block", color: "var(--color-indigo-400)" }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style={{ margin: "0 auto var(--space-3)", display: "block", color: "var(--color-interactive-secondary)" }}>
               <path d="M12 16V8M12 8L9 11M12 8L15 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               <path d="M3 15v2a4 4 0 004 4h10a4 4 0 004-4v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
-            <p style={{ fontWeight: 500, color: "var(--color-text)", marginBottom: 4 }}>Drop CSV or XLSX</p>
-            <p style={{ fontSize: 12, color: "var(--color-text-muted)" }}>.csv · .xlsx · .xls</p>
+            <p style={{ fontWeight: 500, color: "var(--color-text-primary)", marginBottom: 4 }}>Drop CSV or XLSX</p>
+            <p style={{ fontSize: "var(--font-size-caption)", color: "var(--color-text-secondary)" }}>.csv · .xlsx · .xls</p>
           </>
         )}
       </div>
 
       {/* Result */}
       {state === "success" && result && (
-        <div style={{ background: "#FFFFFF", border: "0.5px solid var(--color-success)", borderRadius: "var(--radius-md)", padding: "var(--space-4) var(--space-5)", marginBottom: "var(--space-5)" }}>
-          <p style={{ fontSize: 12, fontWeight: 500, color: "var(--color-success)", marginBottom: 4 }}>
+        <div style={{ background: "var(--color-surface-card)", border: "0.5px solid var(--color-status-success)", borderRadius: "var(--radius-md)", padding: "var(--space-4) var(--space-5)", marginBottom: "var(--space-5)" }}>
+          <p style={{ fontSize: "var(--font-size-caption)", fontWeight: 500, color: "var(--color-status-success)", marginBottom: 4 }}>
             ✓ {fileTypeLabel(result.file_type)} ingested — {result.rows_read} rows
           </p>
           {Object.entries(result.inserted).filter(([, v]) => v > 0).map(([k, v]) => (
-            <span key={k} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-muted)", marginRight: 12 }}>
+            <span key={k} style={{ fontFamily: "var(--font-mono)", fontSize: "var(--font-size-label)", color: "var(--color-text-secondary)", marginRight: 12 }}>
               {k.replace(/_/g, " ")}: +{v}
             </span>
           ))}
@@ -167,36 +168,37 @@ export default function AdminPage() {
       )}
 
       {state === "error" && (
-        <div style={{ background: "var(--color-danger-bg)", border: "0.5px solid var(--color-danger)", borderRadius: "var(--radius-md)", padding: "var(--space-3) var(--space-4)", marginBottom: "var(--space-5)", fontSize: 13, color: "var(--color-danger)" }}>
+        <div style={{ background: "var(--color-fill-danger)", border: "0.5px solid var(--color-status-danger)", borderRadius: "var(--radius-md)", padding: "var(--space-3) var(--space-4)", marginBottom: "var(--space-5)", fontSize: "var(--font-size-body)", color: "var(--color-status-danger)" }}>
           Upload failed: {errorMsg}
         </div>
       )}
 
       {/* Demo data */}
-      <div style={{ background: "#FFFFFF", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "var(--space-5)", marginTop: "var(--space-8)" }}>
-        <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-muted)", marginBottom: "var(--space-3)" }}>Demo data</p>
-        <p style={{ fontSize: 13, color: "var(--color-text-muted)", marginBottom: "var(--space-4)" }}>
+      <div style={{ background: "var(--color-surface-card)", border: "0.5px solid var(--color-border-default)", borderRadius: "var(--radius-md)", padding: "var(--space-5)", marginTop: "var(--space-8)" }}>
+        <p style={{ fontSize: "var(--font-size-label)", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-secondary)", marginBottom: "var(--space-3)" }}>Demo data</p>
+        <p style={{ fontSize: "var(--font-size-body)", color: "var(--color-text-secondary)", marginBottom: "var(--space-4)" }}>
           Load anonymized demo data (PI 26.2 &amp; 26.3) with 3 teams, 6 features, ~100 stories, and risk findings. Replaces all existing data.
         </p>
         <button
           onClick={seedDemo}
           disabled={seedState === "loading"}
           style={{
-            padding: "8px 16px",
-            fontSize: 13,
+            minHeight: 44,
+            padding: "var(--space-2) var(--space-4)",
+            fontSize: "var(--font-size-body)",
             fontWeight: 500,
             border: "none",
             borderRadius: "var(--radius-md)",
-            background: "var(--color-accent)",
-            color: "white",
+            background: "var(--color-interactive-primary)",
+            color: "var(--color-text-inverse)",
             cursor: seedState === "loading" ? "wait" : "pointer",
             opacity: seedState === "loading" ? 0.6 : 1,
           }}
         >
           {seedState === "loading" ? "Seeding…" : "Load demo data"}
         </button>
-        {seedState === "done" && <span style={{ marginLeft: 12, fontSize: 12, color: "var(--color-success)" }}>✓ {seedMsg}</span>}
-        {seedState === "error" && <span style={{ marginLeft: 12, fontSize: 12, color: "var(--color-danger)" }}>✗ {seedMsg}</span>}
+        {seedState === "done" && <span style={{ marginLeft: 12, fontSize: "var(--font-size-caption)", color: "var(--color-status-success)" }}>✓ {seedMsg}</span>}
+        {seedState === "error" && <span style={{ marginLeft: 12, fontSize: "var(--font-size-caption)", color: "var(--color-status-danger)" }}>✗ {seedMsg}</span>}
       </div>
     </div>
   );

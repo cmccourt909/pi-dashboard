@@ -35,25 +35,25 @@ function healthToStatus(health: string) {
 }
 
 function StoryRow({ story }: { story: Story }) {
-  const color = story.status_category === "done" ? "var(--color-success)"
-    : story.status_category === "indeterminate" ? "var(--color-indigo-600)"
-    : "var(--color-text-muted)";
+  const color = story.status_category === "done" ? "var(--color-status-success)"
+    : story.status_category === "indeterminate" ? "var(--color-interactive-primary)"
+    : "var(--color-text-secondary)";
   return (
     <div style={{
       display: "grid",
       gridTemplateColumns: "90px 1fr 90px 50px",
       gap: 8,
       padding: "8px 0",
-      borderBottom: "0.5px solid var(--color-border)",
-      borderLeft: story.blocked ? "2.5px solid var(--color-danger)" : "2.5px solid transparent",
+      borderBottom: "0.5px solid var(--color-border-default)",
+      borderLeft: story.blocked ? "2.5px solid var(--color-status-danger)" : "2.5px solid transparent",
       paddingLeft: 8,
       alignItems: "center",
-      fontSize: 12,
+      fontSize: "var(--font-size-caption)",
     }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: story.blocked ? "var(--color-danger)" : "var(--color-indigo-600)" }}>{story.jira_key}</span>
-      <span style={{ color: "var(--color-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{story.summary}</span>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color, textAlign: "center" }}>{story.status}</span>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-muted)", textAlign: "center", fontFeatureSettings: '"tnum" 1' }}>{story.story_points ?? "—"}</span>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--font-size-label)", color: story.blocked ? "var(--color-status-danger)" : "var(--color-interactive-primary)" }}>{story.jira_key}</span>
+      <span style={{ color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{story.summary}</span>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--font-size-label)", color, textAlign: "center" }}>{story.status}</span>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--font-size-label)", color: "var(--color-text-secondary)", textAlign: "center", fontFeatureSettings: '"tnum" 1' }}>{story.story_points ?? "—"}</span>
     </div>
   );
 }
@@ -63,14 +63,14 @@ function FeatureCard({ feature }: { feature: Feature }) {
   const status = healthToStatus(feature.health);
 
   return (
-    <div style={{ background: "#FFFFFF", border: "0.5px solid var(--color-border)", borderRadius: "var(--radius-lg)", overflow: "hidden", marginBottom: "var(--space-4)" }}>
+    <div style={{ background: "var(--color-surface-card)", border: "0.5px solid var(--color-border-default)", borderRadius: "var(--radius-lg)", overflow: "hidden", marginBottom: "var(--space-4)" }}>
       <div
         style={{ padding: "var(--space-5)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-6)", cursor: "pointer" }}
         onClick={() => setExpanded(e => !e)}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-2)" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-indigo-600)" }}>{feature.feature_key}</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--font-size-label)", color: "var(--color-interactive-primary)" }}>{feature.feature_key}</span>
             <HealthBadge status={status} />
           </div>
           <h3 style={{ marginBottom: "var(--space-3)" }}>{feature.feature_summary}</h3>
@@ -79,23 +79,23 @@ function FeatureCard({ feature }: { feature: Feature }) {
         <div style={{ display: "flex", gap: "var(--space-6)", flexShrink: 0 }}>
           {[
             { label: "Stories", value: feature.total_stories },
-            { label: "Done", value: feature.done_stories, color: "var(--color-success)" },
-            { label: "Blocked", value: feature.blocked_stories, color: feature.blocked_stories > 0 ? "var(--color-danger)" : undefined },
+            { label: "Done", value: feature.done_stories, color: "var(--color-status-success)" },
+            { label: "Blocked", value: feature.blocked_stories, color: feature.blocked_stories > 0 ? "var(--color-status-danger)" : undefined },
           ].map(({ label, value, color }) => (
             <div key={label} style={{ textAlign: "center" }}>
-              <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-muted)", marginBottom: 4 }}>{label}</p>
-              <p style={{ fontSize: 22, fontWeight: 500, color: color ?? "var(--color-indigo-900)", fontFeatureSettings: '"tnum" 1' }}>{value}</p>
+              <p style={{ fontSize: "var(--font-size-label)", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-secondary)", marginBottom: 4 }}>{label}</p>
+              <p style={{ fontSize: "var(--font-size-h2)", fontWeight: 500, color: color ?? "var(--color-text-primary)", fontFeatureSettings: '"tnum" 1' }}>{value}</p>
             </div>
           ))}
-          <span style={{ color: "var(--color-text-muted)", fontSize: 14, alignSelf: "center" }}>{expanded ? "▲" : "▼"}</span>
+          <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-body)", alignSelf: "center" }}>{expanded ? "▲" : "▼"}</span>
         </div>
       </div>
 
       {expanded && feature.stories.length > 0 && (
-        <div style={{ padding: "0 var(--space-5) var(--space-4)", borderTop: "0.5px solid var(--color-border)" }}>
+        <div style={{ padding: "0 var(--space-5) var(--space-4)", borderTop: "0.5px solid var(--color-border-default)" }}>
           <div style={{ display: "grid", gridTemplateColumns: "90px 1fr 90px 50px", gap: 8, padding: "var(--space-3) 0 var(--space-2)", paddingLeft: 8 }}>
             {["Key", "Summary", "Status", "SP"].map(h => (
-              <span key={h} style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-muted)", textAlign: h === "SP" || h === "Status" ? "center" : "left" }}>{h}</span>
+              <span key={h} style={{ fontSize: "var(--font-size-label)", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-secondary)", textAlign: h === "SP" || h === "Status" ? "center" : "left" }}>{h}</span>
             ))}
           </div>
           {feature.stories.map(s => <StoryRow key={s.jira_key} story={s} />)}
@@ -145,16 +145,16 @@ export default function FeaturesPage() {
 
   const filters = [
     { key: "all", label: "All" },
-    { key: "green", label: "Healthy", color: "var(--color-success)" },
-    { key: "yellow", label: "At risk", color: "var(--color-warning)" },
-    { key: "red", label: "Critical", color: "var(--color-danger)" },
-    { key: "blocked", label: "Blocked", color: "var(--color-danger)" },
+    { key: "green", label: "Healthy", color: "var(--color-status-success)" },
+    { key: "yellow", label: "At risk", color: "var(--color-status-warning)" },
+    { key: "red", label: "Critical", color: "var(--color-status-danger)" },
+    { key: "blocked", label: "Blocked", color: "var(--color-status-danger)" },
   ];
 
   return (
     <>
       <div style={{ marginBottom: "var(--space-8)" }}>
-        <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-muted)", marginBottom: "var(--space-1)" }}>Feature health</p>
+        <p style={{ fontSize: "var(--font-size-label)", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-secondary)", marginBottom: "var(--space-1)" }}>Feature health</p>
         <h1>Features</h1>
       </div>
 
@@ -166,12 +166,13 @@ export default function FeaturesPage() {
               key={f.key}
               onClick={() => setFilter(f.key)}
               style={{
-                padding: "4px 12px",
+                minHeight: 44,
+                padding: "var(--space-1) var(--space-3)",
                 borderRadius: "var(--radius-full)",
-                border: `0.5px solid ${filter === f.key ? (f.color ?? "var(--color-indigo-600)") : "var(--color-border)"}`,
-                background: filter === f.key ? (f.color ? f.color + "18" : "var(--color-indigo-50)") : "transparent",
-                color: filter === f.key ? (f.color ?? "var(--color-indigo-600)") : "var(--color-text-muted)",
-                fontSize: 12,
+                border: `0.5px solid ${filter === f.key ? (f.color ?? "var(--color-interactive-primary)") : "var(--color-border-default)"}`,
+                background: filter === f.key ? (f.color ? f.color + "18" : "var(--color-fill-neutral)") : "transparent",
+                color: filter === f.key ? (f.color ?? "var(--color-interactive-primary)") : "var(--color-text-secondary)",
+                fontSize: "var(--font-size-caption)",
                 fontWeight: 500,
                 cursor: "pointer",
               }}
@@ -186,27 +187,28 @@ export default function FeaturesPage() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           style={{
-            padding: "6px 12px",
-            border: "0.5px solid var(--color-border)",
+            minHeight: 44,
+            padding: "var(--space-1) var(--space-3)",
+            border: "0.5px solid var(--color-border-default)",
             borderRadius: "var(--radius-md)",
-            fontSize: 13,
-            color: "var(--color-text)",
-            background: "#FFFFFF",
+            fontSize: "var(--font-size-body)",
+            color: "var(--color-text-primary)",
+            background: "var(--color-surface-card)",
             width: 220,
           }}
         />
       </div>
 
       {error && (
-        <div style={{ background: "var(--color-danger-bg)", border: "0.5px solid var(--color-danger)", borderRadius: "var(--radius-md)", padding: "var(--space-3) var(--space-4)", fontSize: 13, color: "var(--color-danger)", marginBottom: "var(--space-6)" }}>
+        <div style={{ background: "var(--color-fill-danger)", border: "0.5px solid var(--color-status-danger)", borderRadius: "var(--radius-md)", padding: "var(--space-3) var(--space-4)", fontSize: "var(--font-size-body)", color: "var(--color-status-danger)", marginBottom: "var(--space-6)" }}>
           {error}
         </div>
       )}
 
-      {loading && <p style={{ color: "var(--color-text-muted)" }}>Loading features…</p>}
+      {loading && <p style={{ color: "var(--color-text-secondary)" }}>Loading features…</p>}
 
       {!loading && visible.length === 0 && !error && (
-        <div style={{ textAlign: "center", padding: "var(--space-10)", color: "var(--color-text-muted)" }}>
+        <div style={{ textAlign: "center", padding: "var(--space-10)", color: "var(--color-text-secondary)" }}>
           No features match the current filter.
         </div>
       )}

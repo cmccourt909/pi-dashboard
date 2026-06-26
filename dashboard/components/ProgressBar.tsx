@@ -8,13 +8,13 @@ interface Props {
 }
 
 function getSemanticColor(value: number, status?: string): string {
-  if (status === "healthy") return "var(--color-success)";
-  if (status === "critical") return "var(--color-danger)";
-  if (status === "warning") return "var(--color-warning)";
+  if (status === "healthy") return "var(--color-status-success)";
+  if (status === "critical") return "var(--color-status-danger)";
+  if (status === "warning") return "var(--color-status-warning)";
   // Auto from value
-  if (value >= 60) return "var(--color-success)";
-  if (value >= 30) return "var(--color-warning)";
-  return "var(--color-danger)";
+  if (value >= 60) return "var(--color-status-success)";
+  if (value >= 30) return "var(--color-status-warning)";
+  return "var(--color-status-danger)";
 }
 
 export default function ProgressBar({
@@ -38,7 +38,7 @@ export default function ProgressBar({
         style={{
           flex: 1,
           height,
-          background: "var(--color-indigo-100)",
+          background: "var(--color-fill-info)",
           borderRadius: 3,
           overflow: "hidden",
           position: "relative",
