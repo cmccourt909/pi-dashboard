@@ -1,8 +1,7 @@
 import { api, healthToStatus } from "@/lib/api";
 import PICard from "@/components/PICard";
-import AskLodestar from "@/components/AskLodestar";
-import NorthlineInsightsStrip from "@/components/NorthlineInsightsStrip";
-import LodestarBriefingPanel from "@/components/LodestarBriefingPanel";
+import NorthlineInsights from "@/components/NorthlineInsights";
+import LodestarActions from "@/components/LodestarActions";
 import RecentActivityFeed from "@/components/RecentActivityFeed";
 import TopFindings from "@/components/TopFindings";
 
@@ -199,11 +198,8 @@ export default async function HomePage() {
 
       {/* AI insights + briefing */}
       <div className="insights-grid" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "var(--space-5)", marginBottom: "var(--space-8)", alignItems: "start" }}>
-        <NorthlineInsightsStrip />
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-          <LodestarBriefingPanel />
-          <AskLodestar />
-        </div>
+        <NorthlineInsights />
+        <LodestarActions />
       </div>
 
       {error && (
