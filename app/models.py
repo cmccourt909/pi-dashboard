@@ -280,6 +280,44 @@ class FeatureNarrative(Base):
     feature: Mapped["Issue"] = relationship()
 
 
+# ---------- stakeholder analysis ----------
+
+class AnalysisSession(Base):
+    """A single stakeholder analysis run against one transcript."""
+    __tablename__ = "analysis_session"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)  # UUID
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    transcript_text: Mapped[str] = mapped_column(Text, nullable=False)
+    has_speaker_attribution: Mapped[bool] = mapped_column(Boolean, default=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)  # "pending" | "running" | "complete" | "failed"
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    prompt_version: Mapped[str] = mapped_column(String(20), nullable=False)
+
+    sections: Mapped[list["AnalysisSectionResult"]] = relationship(
+        back_populates="session", cascade="all, delete-orphan"
+    )
+
+
+class AnalysisSectionResult(Base):
+    """Result of one analysis section within a session."""
+    __tablename__ = "analysis_section_result"
+    __table_args__ = (UniqueConstraint("session_id", "section_key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("analysis_session.id"), nullable=False)
+    section_key: Mapped[str] = mapped_column(String(50), nullable=False)  # e.g. "speaker_statistics"
+    status: Mapped[str] = mapped_column(String(20), nullable=False)  # "pending" | "running" | "complete" | "error"
+    result_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    generated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    model_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+
+    session: Mapped["AnalysisSession"] = relationship(back_populates="sections")
+
+
 # ---------- bootstrap ----------
 
 def get_engine():

@@ -13,6 +13,7 @@ from app.api.routers.roadmap import pi_features_router
 from app.api.routers.enrich import router as enrich_router
 from app.api.routers.narrative import router as narrative_router, batch_router as narrative_batch_router
 from app.api.routers.lodestar import lodestar_router
+from app.stakeholders.router import router as stakeholders_router
 
 # ─── Run migrations on startup ────────────────────────────────────────────────
 def _run_startup_migrations():
@@ -26,6 +27,8 @@ def _run_startup_migrations():
         run_roadmap_migration()
         from app.migrations.add_lodestar_prompt_version import run as run_lodestar_version_migration
         run_lodestar_version_migration()
+        from app.migrations.add_stakeholder_analysis import run as run_stakeholder_migration
+        run_stakeholder_migration()
     except Exception as e:
         print(f"[startup] Migration warning: {e}")
 
@@ -46,7 +49,7 @@ _allowed_origins = [o.strip() for o in _cors_origins.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
-    allow_methods=["GET", "POST"],   # POST needed for /api/upload
+    allow_methods=["GET", "POST", "DELETE"],   # POST needed for /api/upload, DELETE for session removal
     allow_headers=["Content-Type", "Authorization", "X-Upload-Key"],  # Security: restrict to specific headers
 )
 
@@ -59,6 +62,7 @@ app.include_router(enrich_router)
 app.include_router(narrative_router)
 app.include_router(narrative_batch_router)
 app.include_router(lodestar_router)
+app.include_router(stakeholders_router)
 
 @app.get("/health")
 def health():
