@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import LayoutSelector from "@/components/navigation/LayoutSelector";
-import AutoRefresh from "@/components/AutoRefresh";
+import MainContentWrapper from "@/components/navigation/MainContentWrapper";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 
@@ -24,14 +24,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to main content
         </a>
         <LayoutSelector />
-        <main
-          id="main-content"
-          className="main-content"
-        >
+        <MainContentWrapper>
           <ErrorBoundary>
             {children}
           </ErrorBoundary>
-        </main>
+        </MainContentWrapper>
       </body>
     </html>
   );

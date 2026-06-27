@@ -36,3 +36,12 @@ export default function LayoutSelector() {
     </>
   );
 }
+
+/**
+ * Hook to check if the current route is the Command Center overview.
+ * Used by MainContentWrapper to conditionally apply layout styles.
+ */
+export function useIsCommandCenter(): boolean {
+  const pathname = usePathname();
+  return pathname === "/";
+}
