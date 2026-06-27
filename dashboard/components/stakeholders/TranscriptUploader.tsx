@@ -60,7 +60,15 @@ export default function TranscriptUploader({ onUploadComplete }: TranscriptUploa
       }
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setError(body.detail || `Upload failed (${res.status})`);
+        // FastAPI 422 returns detail as array of {type, loc, msg, input}
+        const detail = body.detail;
+        if (Array.isArray(detail)) {
+          setError(detail.map((d: any) => d.msg || JSON.stringify(d)).join("; "));
+        } else if (typeof detail === "string") {
+          setError(detail);
+        } else {
+          setError(`Upload failed (${res.status})`);
+        }
         return;
       }
 

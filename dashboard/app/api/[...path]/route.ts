@@ -67,10 +67,9 @@ async function proxy(request: NextRequest, params: { path: string[] }) {
     if (request.method !== "GET" && request.method !== "HEAD") {
       const contentType = request.headers.get("content-type") || "";
       if (contentType.includes("multipart/form-data")) {
-        // For file uploads, pass the raw body
+        // For file uploads, pass the raw body and KEEP the content-type
+        // header (it contains the boundary marker needed by the backend)
         fetchOptions.body = await request.arrayBuffer();
-        // Let fetch set the content-type with boundary
-        headers.delete("content-type");
       } else {
         fetchOptions.body = await request.text();
       }
