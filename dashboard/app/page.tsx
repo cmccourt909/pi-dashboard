@@ -1,246 +1,315 @@
-import { api, healthToStatus } from "@/lib/api";
-import PICard from "@/components/PICard";
-import NorthlineInsights from "@/components/NorthlineInsights";
-import LodestarActions from "@/components/LodestarActions";
-import RecentActivityFeed from "@/components/RecentActivityFeed";
-import TopFindings from "@/components/TopFindings";
+import { api } from "@/lib/api";
+import ProgramHeader from "@/components/command-center/ProgramHeader";
+import LodestarBriefing from "@/components/command-center/LodestarBriefing";
+import KPIStrip from "@/components/command-center/KPIStrip";
+import NeedsAttentionSection from "@/components/command-center/NeedsAttentionSection";
+import PIHealthSection from "@/components/command-center/PIHealthSection";
+import RecentFindingsList from "@/components/command-center/RecentFindingsList";
+import QuickNavigationGrid, {
+  DEFAULT_NAV_CARDS,
+} from "@/components/command-center/QuickNavigationGrid";
+import CommandCenterFooter from "@/components/command-center/CommandCenterFooter";
+import { deriveOverviewKPIs } from "@/components/command-center/derive-kpis";
+import type { PIData, Finding } from "@/lib/api";
+import type { AttentionFinding, TeamHealth, KPIMetric } from "@/components/command-center/types";
+import type { RecentFinding } from "@/components/command-center/RecentFindingsList";
 
-function severityColor(s: string) {
-  if (s === "critical") return "var(--color-status-danger)";
-  if (s === "warning") return "var(--color-status-warning)";
-  return "var(--color-interactive-primary)";
+/**
+ * Maps raw API findings to AttentionFinding format for NeedsAttentionSection.
+ * Filters to only critical and warning severity findings.
+ */
+function mapToAttentionFindings(findings: Finding[]): AttentionFinding[] {
+  return findings
+    .filter((f) => f.severity === "critical" || f.severity === "warning")
+    .map((f) => ({
+      id: f.rule_id,
+      severity: f.severity as "critical" | "warning",
+      title: f.title,
+      description: f.detail,
+      recommendation: f.recommendation,
+      category: f.category,
+    }));
 }
 
-function severityBg(s: string) {
-  if (s === "critical") return "var(--color-fill-danger)";
-  if (s === "warning") return "var(--color-fill-warning)";
-  return "var(--color-fill-info)";
+/**
+ * Maps raw API findings to RecentFinding format for RecentFindingsList.
+ * Shows the most recent 10 findings across all severities.
+ */
+function mapToRecentFindings(findings: Finding[]): RecentFinding[] {
+  return findings.slice(0, 10).map((f) => ({
+    id: f.rule_id,
+    severity: f.severity,
+    title: f.title,
+  }));
 }
 
-function StatCard({ label, value, color }: { label: string; value: string | number; color?: string }) {
-  return (
-    <div style={{
-      background: "var(--color-surface-card)",
-      border: "0.5px solid var(--color-border-default)",
-      borderRadius: "var(--radius-md)",
-      padding: "var(--space-4) var(--space-4)",
-    }}>
-      <p style={{ fontSize: "var(--font-size-label)", fontWeight: "var(--font-weight-medium)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-secondary)", marginBottom: "var(--space-2)" }}>
-        {label}
-      </p>
-      <p style={{
-        fontSize: "var(--font-size-h2)",
-        fontWeight: "var(--font-weight-semi)",
-        color: color ?? "var(--color-text-primary)",
-        lineHeight: 1,
-        fontFeatureSettings: '"tnum" 1',
-      }}>
-        {value}
-      </p>
-    </div>
-  );
+/**
+ * Derives team health data from PI sprints for PIHealthSection.
+ */
+function deriveTeamHealth(piData: PIData | null): TeamHealth[] {
+  if (!piData?.sprints?.length) return [];
+
+  return piData.sprints.map((sprint) => {
+    const pct = sprint.pct_complete ?? 0;
+    const hasBlocker = (sprint.blocked_issues ?? 0) > 0;
+
+    let status: "healthy" | "at-risk" | "critical";
+    if (hasBlocker || pct < 30) {
+      status = "critical";
+    } else if (pct < 60) {
+      status = "at-risk";
+    } else {
+      status = "healthy";
+    }
+
+    return {
+      name: sprint.name,
+      status,
+      completionPct: pct,
+    };
+  });
 }
 
-function FindingsPanel({ findings }: { findings: any[] }) {
-  const critical = findings.filter((f) => f.severity === "critical");
-  const warning = findings.filter((f) => f.severity === "warning");
-  const info = findings.filter((f) => f.severity === "info");
-
-  return (
-    <div
-      role="region"
-      aria-label="Risk findings"
-      style={{ background: "var(--color-surface-card)", border: "0.5px solid var(--color-border-default)", borderRadius: "var(--radius-md)", overflow: "hidden" }}
-    >
-      {/* Header */}
-      <div style={{ padding: "var(--space-3) var(--space-4)", borderBottom: "0.5px solid var(--color-border-default)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: "var(--font-size-body)", fontWeight: "var(--font-weight-medium)", color: "var(--color-text-primary)" }}>Findings</span>
-        <div style={{ display: "flex", gap: 12 }}>
-          {[
-            { count: critical.length, color: "var(--color-status-danger)", label: "critical" },
-            { count: warning.length, color: "var(--color-status-warning)", label: "warn" },
-            { count: info.length, color: "var(--color-interactive-primary)", label: "info" },
-          ].map(({ count, color, label }) => (
-            <span key={label} style={{ fontSize: "var(--font-size-label)", fontWeight: "var(--font-weight-medium)", color }}>
-              {count} {label}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Finding rows */}
-      <div style={{ maxHeight: 560, overflowY: "auto" }}>
-        {findings.map((f, i) => (
-          <div
-            key={f.rule_id ?? i}
-            style={{
-              padding: "10px var(--space-4)",
-              borderBottom: i < findings.length - 1 ? "0.5px solid var(--color-border-default)" : "none",
-              borderLeft: `2.5px solid ${severityColor(f.severity)}`,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <span style={{
-                fontSize: "var(--font-size-label)",
-                fontWeight: "var(--font-weight-medium)",
-                color: severityColor(f.severity),
-                background: severityBg(f.severity),
-                padding: "1px 8px",
-                borderRadius: "var(--radius-pill)",
-              }}>
-                {f.severity}
-              </span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--font-size-caption)", color: "var(--color-text-secondary)" }}>
-                {f.category}
-              </span>
-            </div>
-            <p style={{ fontSize: "var(--font-size-body)", fontWeight: "var(--font-weight-semi)", color: "var(--color-text-primary)", marginBottom: 2 }}>
-              {f.title}
-            </p>
-            <p style={{ fontSize: "var(--font-size-caption)", color: "var(--color-text-secondary)", lineHeight: "var(--line-height-normal)" }}>
-              {f.detail}
-            </p>
-            {f.recommendation && (
-              <p style={{ fontSize: "var(--font-size-caption)", color: "var(--color-interactive-primary)", marginTop: 4 }}>
-                → {f.recommendation}
-              </p>
-            )}
-            {f.issue_keys?.length > 0 && (
-              <div style={{ marginTop: 4, display: "flex", flexWrap: "wrap", gap: 4 }}>
-                {f.issue_keys.slice(0, 5).map((key: string) => (
-                  <span key={key} style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "var(--font-size-caption)",
-                    background: "var(--color-fill-neutral)",
-                    color: "var(--color-interactive-primary)",
-                    padding: "2px 6px",
-                    borderRadius: "var(--radius-sm)",
-                  }}>
-                    {key}
-                  </span>
-                ))}
-                {f.issue_keys.length > 5 && (
-                  <span style={{ fontSize: "var(--font-size-caption)", color: "var(--color-text-secondary)" }}>+{f.issue_keys.length - 5} more</span>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+/**
+ * Converts OverviewKPIs into KPIMetric[] array for KPIStrip.
+ */
+function kpisToMetrics(
+  kpis: ReturnType<typeof deriveOverviewKPIs>,
+): KPIMetric[] {
+  return [
+    {
+      label: "Sprint velocity",
+      value: kpis.sprintVelocity.value,
+      delta: kpis.sprintVelocity.delta,
+      subtitle: "Issues completed",
+    },
+    {
+      label: "Features on track",
+      value: `${kpis.featuresOnTrack.onTrack}/${kpis.featuresOnTrack.total}`,
+      delta: kpis.featuresOnTrack.delta,
+    },
+    {
+      label: "Active blockers",
+      value: kpis.activeBlockers.count,
+      delta: kpis.activeBlockers.delta,
+    },
+    {
+      label: "Days remaining",
+      value: kpis.daysRemaining.days,
+      subtitle: kpis.daysRemaining.endDate || undefined,
+    },
+    {
+      label: "Forecast confidence",
+      value: `${kpis.forecastConfidence.percentage}%`,
+      subtitle: "Monte Carlo P50",
+    },
+  ];
 }
 
+/**
+ * Command Center V2 Overview Page (Server Component).
+ *
+ * Fetches PI and findings data, derives KPIs and team health,
+ * and composes the full page layout.
+ *
+ * Validates: Requirements 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 7.3, 8.1, 9.1, 10.1, 10.2, 10.4, 10.5
+ */
 export default async function HomePage() {
-  let pis: any[] = [];
-  let findings: any[] = [];
+  let pis: PIData[] = [];
+  let findings: Finding[] = [];
   let error: string | null = null;
+
   try {
     [pis, findings] = await Promise.all([api.getPIs(), api.getFindings()]);
   } catch (e) {
     error = e instanceof Error ? e.message : "Failed to load data";
   }
 
-  const totalIssues = pis.reduce((s, p) => s + (p.total_issues || 0), 0);
-  const avgComplete = pis.length > 0 ? Math.round(pis.reduce((s, p) => s + (p.pct_complete || 0), 0) / pis.length) : 0;
-  const critCount = findings.filter((f) => f.severity === "critical").length;
+  // Use the first PI as the current PI context
+  const currentPI: PIData | null = pis.length > 0 ? pis[0] : null;
 
-  // Empty state
-  if (!error && pis.length === 0) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 400, textAlign: "center" }}>
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style={{ marginBottom: "var(--space-4)", color: "var(--color-brand-slate)" }}>
-          <path d="M12 16V8M12 8L9 11M12 8L15 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M3 15v2a4 4 0 004 4h10a4 4 0 004-4v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-        <h2 style={{ marginBottom: "var(--space-2)", color: "var(--color-text-primary)" }}>No data yet</h2>
-        <p style={{ marginBottom: "var(--space-5)", color: "var(--color-text-secondary)" }}>Upload a Jira CSV or XLSX to get started.</p>
-        <a href="/admin" style={{
-          background: "var(--color-brand-coral)",
-          color: "var(--color-text-inverse)",
-          padding: "var(--space-2) var(--space-4)",
-          borderRadius: "var(--radius-md)",
-          fontSize: "var(--font-size-body)",
-          fontWeight: "var(--font-weight-medium)",
-          textDecoration: "none",
-        }}>
-          Upload data
-        </a>
-      </div>
-    );
-  }
+  // Derive KPIs from API data
+  const overviewKPIs = deriveOverviewKPIs(currentPI, findings);
+  const metrics = kpisToMetrics(overviewKPIs);
+
+  // Map findings for child components
+  const attentionFindings = mapToAttentionFindings(findings);
+  const recentFindings = mapToRecentFindings(findings);
+
+  // Derive team health from PI data
+  const teamHealth = deriveTeamHealth(currentPI);
 
   return (
-    <>
-      {/* Page header */}
-      <div style={{ marginBottom: "var(--space-8)" }}>
-        <p style={{ fontSize: "var(--font-size-label)", fontWeight: "var(--font-weight-medium)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-secondary)", marginBottom: "var(--space-1)" }}>
-          Program increment overview
-        </p>
-        <h1 style={{ color: "var(--color-text-primary)" }}>PI health tracker</h1>
-      </div>
-
-      {/* Stat cards */}
-      <div className="stat-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--space-3)", marginBottom: "var(--space-8)" }}>
-        <StatCard label="PIs tracked" value={pis.length} />
-        <StatCard label="Total issues" value={totalIssues} />
-        <StatCard
-          label="Avg complete"
-          value={avgComplete + "%"}
-          color={avgComplete >= 60 ? "var(--color-status-success)" : avgComplete >= 30 ? "var(--color-status-warning)" : "var(--color-status-danger)"}
-        />
-        <StatCard
-          label="Critical findings"
-          value={critCount}
-          color={critCount > 0 ? "var(--color-status-danger)" : undefined}
-        />
-      </div>
-
-      {/* AI insights + briefing */}
-      <div className="insights-grid" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "var(--space-5)", marginBottom: "var(--space-8)", alignItems: "start" }}>
-        <NorthlineInsights />
-        <LodestarActions />
-      </div>
-
+    <main
+      className="cc-main"
+      style={{
+        marginTop: 56,
+        padding: "var(--space-8, 32px) var(--space-6, 24px)",
+        width: "100%",
+        maxWidth: "100%",
+      }}
+    >
+      {/* Non-blocking error banner */}
       {error && (
-        <div style={{
-          background: "var(--color-fill-danger)",
-          border: "0.5px solid var(--color-status-danger)",
-          borderRadius: "var(--radius-md)",
-          padding: "var(--space-3) var(--space-4)",
-          fontSize: "var(--font-size-body)",
-          color: "var(--color-status-danger)",
-          marginBottom: "var(--space-6)",
-        }}>
-          API error: {error}. Make sure the FastAPI backend is running.
+        <div
+          role="alert"
+          style={{
+            background: "var(--color-fill-danger, #fef2f2)",
+            border: "1px solid var(--color-status-danger, #dc2626)",
+            borderRadius: "var(--radius-md, 8px)",
+            padding: "var(--space-3, 12px) var(--space-4, 16px)",
+            fontSize: 14,
+            color: "var(--color-status-danger, #dc2626)",
+            marginBottom: "var(--space-6, 24px)",
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-2, 8px)",
+          }}
+          data-testid="error-banner"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <path
+              d="M12 8v4M12 16h.01"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+          <span>
+            Unable to load data: {error}. Some sections may show placeholder
+            values.
+          </span>
         </div>
       )}
 
-      {/* Main content: PIs + findings rail */}
-      <div className="content-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "var(--space-6)", alignItems: "start" }}>
-        <div>
-          <p style={{ fontSize: "var(--font-size-label)", fontWeight: "var(--font-weight-medium)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-secondary)", marginBottom: "var(--space-3)" }}>
-            Program increments — {pis.length} total
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "var(--space-4)" }}>
-            {pis.map((pi, i) => (
-              <PICard key={pi.name ?? i} pi={pi} />
-            ))}
-          </div>
+      {/* Program Header */}
+      <ProgramHeader
+        lastSyncTimestamp={currentPI?.end_date ?? null}
+        isSyncing={false}
+      />
+
+      {/* Lodestar AI Briefing Panel */}
+      <div style={{ marginBottom: "var(--space-6, 24px)" }}>
+        <LodestarBriefing />
+      </div>
+
+      {/* KPI Strip */}
+      <div style={{ marginBottom: "var(--space-6, 24px)" }}>
+        <KPIStrip metrics={metrics} />
+      </div>
+
+      {/* Two-column layout: NeedsAttention (left) + PIHealth (right) */}
+      <div
+        className="cc-two-col"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "var(--space-6, 24px)",
+          marginBottom: "var(--space-8, 32px)",
+          alignItems: "start",
+        }}
+      >
+        <NeedsAttentionSection findings={attentionFindings} />
+        <PIHealthSection
+          piName={currentPI?.name ?? ""}
+          overallCompletionPct={currentPI?.pct_complete ?? 0}
+          teams={teamHealth}
+          daysRemaining={overviewKPIs.daysRemaining.days}
+        />
+      </div>
+
+      {/* Bottom section: Recent Findings + Quick Navigation + Executive Briefing CTA */}
+      <div
+        className="cc-bottom-section"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "var(--space-6, 24px)",
+          marginBottom: "var(--space-8, 32px)",
+          alignItems: "start",
+        }}
+      >
+        <div className="flex flex-col gap-6">
+          <RecentFindingsList findings={recentFindings} />
+          <QuickNavigationGrid cards={DEFAULT_NAV_CARDS} />
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", position: "sticky", top: 72 }}>
-          <div>
-            <p style={{ fontSize: "var(--font-size-label)", fontWeight: "var(--font-weight-medium)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-secondary)", marginBottom: "var(--space-3)" }}>
-              Risk findings — {findings.length} total
-            </p>
-            <FindingsPanel findings={findings} />
-          </div>
-          <RecentActivityFeed />
-          <div className="mobile-only">
-            <TopFindings />
-          </div>
+
+        {/* Executive Briefing CTA */}
+        <div
+          style={{
+            boxShadow: "var(--shadow-card)",
+            borderRadius: "var(--radius-lg, 12px)",
+            backgroundColor: "var(--color-surface, #ffffff)",
+            padding: "var(--space-6, 24px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+            gap: "var(--space-3, 12px)",
+          }}
+        >
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+            style={{ color: "var(--color-brand-indigo, #4f46e5)" }}
+          >
+            <path
+              d="M9 12h6M9 16h6M5 8h14M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <h3
+            className="text-base font-semibold"
+            style={{ color: "var(--color-text-primary)" }}
+          >
+            Executive Briefing
+          </h3>
+          <p
+            className="text-sm"
+            style={{ color: "var(--color-text-secondary)" }}
+          >
+            Generate a SteerCo-ready briefing document with AI-powered insights
+            and recommendations.
+          </p>
+          <button
+            className="mt-2"
+            style={{
+              padding: "10px 20px",
+              borderRadius: "var(--radius-md, 8px)",
+              backgroundColor: "var(--color-brand-indigo, #4f46e5)",
+              color: "#ffffff",
+              border: "none",
+              fontSize: 14,
+              fontWeight: 500,
+              cursor: "pointer",
+            }}
+          >
+            Generate SteerCo briefing
+          </button>
         </div>
       </div>
-    </>
+
+      {/* Footer */}
+      <CommandCenterFooter />
+    </main>
   );
 }
