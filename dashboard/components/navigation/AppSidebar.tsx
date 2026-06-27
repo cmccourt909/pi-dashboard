@@ -7,6 +7,7 @@ import {
   IconCalendar,
   IconChartBar,
   IconAlertTriangle,
+  IconUsers,
   IconSettings,
 } from "@tabler/icons-react";
 import UserProfileBlock from "./UserProfileBlock";
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
   { href: "/roadmap", label: "Roadmap", icon: IconCalendar },
   { href: "/forecast", label: "Forecast", icon: IconChartBar },
   { href: "/findings", label: "Findings", icon: IconAlertTriangle },
+  { href: "/stakeholders", label: "Stakeholder Analysis", icon: IconUsers },
   { href: "/admin", label: "Admin", icon: IconSettings },
 ];
 
