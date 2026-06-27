@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import AppSidebar from "@/components/navigation/AppSidebar";
-import TopNavBar from "@/components/navigation/TopNavBar";
-import MobileBottomNav from "@/components/navigation/MobileBottomNav";
+import LayoutSelector from "@/components/navigation/LayoutSelector";
 import AutoRefresh from "@/components/AutoRefresh";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
@@ -25,9 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        <AppSidebar />
-        <TopNavBar />
-        <MobileBottomNav />
+        <LayoutSelector />
         <main
           id="main-content"
           className="main-content"

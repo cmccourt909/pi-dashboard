@@ -394,6 +394,13 @@ button, .btn {
   .main-content {
     padding: var(--space-5) var(--space-4) 64px;
   }
+  /* Command Center V2: stack two-column layouts into single column below 1024px */
+  .cc-two-col {
+    grid-template-columns: 1fr !important;
+  }
+  .cc-bottom-section {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* Mobile: full stack */
@@ -445,6 +452,13 @@ button, .btn {
 @media (max-width: 767px) {
   .detail-drawer {
     width: 100%;
+  }
+}
+
+/* Command Center V2: responsive main area padding */
+@media (max-width: 767px) {
+  .cc-main {
+    padding: var(--space-4) var(--space-4) !important;
   }
 }
 
