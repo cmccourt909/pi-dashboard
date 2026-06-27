@@ -1,27 +1,25 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import TranscriptUploader from "../../components/stakeholders/TranscriptUploader";
-import SectionPanel from "../../components/stakeholders/SectionPanel";
+import TranscriptDock from "../../components/stakeholders/TranscriptDock";
+import LodestarStrip from "../../components/stakeholders/LodestarStrip";
+import KPISummary from "../../components/stakeholders/KPISummary";
+import SectionRail from "../../components/stakeholders/SectionRail";
 import SessionHistory from "../../components/stakeholders/SessionHistory";
-import ExportBar from "../../components/stakeholders/ExportBar";
 import { useAnalysisStream, type SectionKey } from "../../components/stakeholders/useAnalysisStream";
 
-/**
- * Section keys matching the backend orchestrator's SECTIONS list.
- */
-const ANALYSIS_SECTIONS: { key: SectionKey; label: string }[] = [
-  { key: "speaker_statistics", label: "Speaker Statistics" },
-  { key: "meeting_minutes", label: "Meeting Minutes" },
-  { key: "raid_log", label: "RAID Log" },
-  { key: "delivery_signals", label: "Delivery Signals" },
-  { key: "team_health", label: "Team Health" },
-  { key: "gap_analysis", label: "Gap Analysis" },
-  { key: "empathy_map", label: "Empathy Map" },
-  { key: "stakeholder_register", label: "Stakeholder Register" },
-];
+// Section views
+import SpeakerStatsView from "../../components/stakeholders/views/SpeakerStatsView";
+import MeetingMinutesView from "../../components/stakeholders/views/MeetingMinutesView";
+import RaidLogView from "../../components/stakeholders/views/RaidLogView";
+import DeliverySignalsView from "../../components/stakeholders/views/DeliverySignalsView";
+import TeamHealthView from "../../components/stakeholders/views/TeamHealthView";
+import GapAnalysisView from "../../components/stakeholders/views/GapAnalysisView";
+import EmpathyMapView from "../../components/stakeholders/views/EmpathyMapView";
+import StakeRegisterView from "../../components/stakeholders/views/StakeRegisterView";
 
 export default function StakeholderAnalysisPage() {
+  const [activeSection, setActiveSection] = useState<SectionKey>("speaker_statistics");
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -36,10 +34,9 @@ export default function StakeholderAnalysisPage() {
   } = useAnalysisStream();
 
   const handleUploadComplete = useCallback(
-    (sessionId: string, _filename: string) => {
+    (sessionId: string) => {
       setActiveSessionId(sessionId);
       startStream(sessionId);
-      // Refresh session list after a short delay for the session to be created
       setTimeout(() => setRefreshTrigger((n) => n + 1), 500);
     },
     [startStream]
@@ -48,17 +45,14 @@ export default function StakeholderAnalysisPage() {
   const handleSelectSession = useCallback(
     async (sessionId: string) => {
       if (sessionId === activeSessionId && (isStreaming || allDone)) return;
-
       setActiveSessionId(sessionId);
       try {
         const res = await fetch(`/api/stakeholders/sessions/${sessionId}`);
         if (res.ok) {
           const data = await res.json();
           if (data.status === "complete" || data.status === "failed") {
-            // Load persisted results
             loadPersistedSession(data);
           } else {
-            // Session still running — connect to stream
             startStream(sessionId);
           }
         }
@@ -78,162 +72,111 @@ export default function StakeholderAnalysisPage() {
   );
 
   const handleCopy = useCallback(
-    async (section: SectionKey) => {
+    (section: SectionKey) => {
       const text = sections[section]?.text;
-      if (text) {
-        try {
-          await navigator.clipboard.writeText(text);
-        } catch {
-          // Clipboard API may not be available
-        }
-      }
+      if (text) navigator.clipboard?.writeText(text);
     },
     [sections]
   );
+
+  // Build status map for rail
+  const statuses = Object.fromEntries(
+    Object.entries(sections).map(([k, v]) => [k, v.status])
+  ) as Record<SectionKey, typeof sections[SectionKey]["status"]>;
+
+  // Active section view
+  const activeSectionState = sections[activeSection];
+  const sectionText = activeSectionState?.text || "";
+  const sectionHasContent = activeSectionState?.status === "complete" || (activeSectionState?.status === "streaming" && sectionText.length > 0);
+
+  const renderActiveView = () => {
+    if (!sectionHasContent) {
+      return (
+        <div
+          style={{
+            flex: 1,
+            background: "var(--color-surface-card)",
+            borderRadius: "var(--radius-md)",
+            boxShadow: "var(--shadow-card)",
+            padding: "var(--space-8)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--color-text-tertiary)",
+            fontSize: "var(--font-size-body)",
+            fontStyle: "italic",
+          }}
+        >
+          {activeSectionState?.status === "streaming" ? "Analyzing…" : "Upload a transcript to begin analysis."}
+        </div>
+      );
+    }
+
+    const props = {
+      text: sectionText,
+      onCopy: () => handleCopy(activeSection),
+      onRegenerate: () => handleRegenerate(activeSection),
+    };
+
+    switch (activeSection) {
+      case "speaker_statistics": return <SpeakerStatsView {...props} />;
+      case "meeting_minutes": return <MeetingMinutesView {...props} />;
+      case "raid_log": return <RaidLogView {...props} />;
+      case "delivery_signals": return <DeliverySignalsView {...props} />;
+      case "team_health": return <TeamHealthView {...props} />;
+      case "gap_analysis": return <GapAnalysisView {...props} />;
+      case "empathy_map": return <EmpathyMapView {...props} />;
+      case "stakeholder_register": return <StakeRegisterView {...props} />;
+      default: return null;
+    }
+  };
 
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "280px 1fr",
+        gridTemplateColumns: "240px 1fr",
         gap: "var(--space-6)",
         minHeight: "calc(100vh - 56px - var(--space-8) - var(--space-8))",
         maxWidth: 1600,
       }}
     >
-      {/* ── Sidebar: Session History ──────────────────────────────── */}
+      {/* Sidebar: Session History */}
       <SessionHistory
         activeSessionId={activeSessionId}
         onSelectSession={handleSelectSession}
         refreshTrigger={refreshTrigger}
       />
 
-      {/* ── Main Content Area ─────────────────────────────────────── */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
-        {/* Header */}
+      {/* Main content */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
+        {/* Page header */}
         <div>
-          <p
-            style={{
-              fontSize: "var(--font-size-label)",
-              fontWeight: 500,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "var(--color-text-secondary)",
-              marginBottom: "var(--space-1)",
-            }}
-          >
-            Stakeholder Analysis
-          </p>
-          <h1>Transcript Intelligence</h1>
-          <p style={{ marginTop: "var(--space-2)" }}>
-            Upload a meeting transcript to generate comprehensive stakeholder analysis across eight dimensions.
+          <h1 style={{ fontSize: "var(--font-size-h1)", fontWeight: 700, margin: 0 }}>Stakeholder Analysis</h1>
+          <p style={{ fontSize: "var(--font-size-body)", color: "var(--color-text-secondary)", margin: "4px 0 0" }}>
+            Transcript intelligence across eight dimensions.
           </p>
         </div>
 
-        {/* Transcript Uploader */}
-        <section
-          aria-label="Upload transcript"
-          style={{
-            background: "var(--color-surface-card)",
-            border: "0.5px solid var(--color-border-default)",
-            borderRadius: "var(--radius-md)",
-            padding: "var(--space-6)",
-          }}
-        >
-          <p
-            style={{
-              fontSize: "var(--font-size-label)",
-              fontWeight: 500,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "var(--color-text-secondary)",
-              marginBottom: "var(--space-3)",
-            }}
-          >
-            Upload Transcript
-          </p>
-          <TranscriptUploader onUploadComplete={handleUploadComplete} />
-        </section>
+        {/* Transcript upload dock */}
+        <TranscriptDock onUploadComplete={handleUploadComplete} />
 
-        {/* Analysis Progress */}
-        <section
-          aria-label="Analysis progress"
-          style={{
-            background: "var(--color-surface-card)",
-            border: "0.5px solid var(--color-border-default)",
-            borderRadius: "var(--radius-md)",
-            padding: "var(--space-4) var(--space-5)",
-          }}
-        >
-          <p
-            style={{
-              fontSize: "var(--font-size-label)",
-              fontWeight: 500,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "var(--color-text-secondary)",
-              marginBottom: "var(--space-3)",
-            }}
-          >
-            Progress
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
-            {ANALYSIS_SECTIONS.map((s) => {
-              const state = sections[s.key];
-              return (
-                <span
-                  key={s.key}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    padding: "2px 10px",
-                    borderRadius: "var(--radius-pill)",
-                    fontSize: "var(--font-size-label)",
-                    fontWeight: 500,
-                    background:
-                      state.status === "complete"
-                        ? "var(--color-fill-success)"
-                        : state.status === "streaming"
-                          ? "var(--color-fill-info)"
-                          : state.status === "error"
-                            ? "var(--color-fill-danger)"
-                            : "var(--color-fill-neutral)",
-                    color:
-                      state.status === "complete"
-                        ? "var(--color-status-success)"
-                        : state.status === "streaming"
-                          ? "var(--color-status-info)"
-                          : state.status === "error"
-                            ? "var(--color-status-danger)"
-                            : "var(--color-text-secondary)",
-                  }}
-                >
-                  {s.label}
-                </span>
-              );
-            })}
-          </div>
-        </section>
+        {/* Lodestar Insights */}
+        <LodestarStrip sections={sections} />
 
-        {/* Section Panels (×8) */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          {ANALYSIS_SECTIONS.map((s) => (
-            <SectionPanel
-              key={s.key}
-              sectionKey={s.key}
-              state={sections[s.key]}
-              onRegenerate={() => handleRegenerate(s.key)}
-              onCopy={() => handleCopy(s.key)}
-            />
-          ))}
+        {/* KPI Summary */}
+        <KPISummary sections={sections} />
+
+        {/* Section Rail + Active View */}
+        <div style={{ display: "flex", gap: "var(--space-5)" }}>
+          <SectionRail active={activeSection} onSelect={setActiveSection} statuses={statuses} />
+          {renderActiveView()}
         </div>
 
-        {/* Export Bar */}
-        <ExportBar
-          sessionId={activeSessionId}
-          sections={sections}
-          allDone={allDone}
-        />
+        {/* Footer */}
+        <footer style={{ textAlign: "center", fontSize: 11, paddingTop: "var(--space-4)", color: "var(--color-text-secondary)" }}>
+          Northline Delivery Intelligence · Powered by Lodestar AI
+        </footer>
       </div>
     </div>
   );
