@@ -140,7 +140,7 @@ export default async function HomePage() {
   const teamHealth = deriveTeamHealth(currentPI);
 
   return (
-    <main
+    <div
       className="cc-main"
       style={{
         marginTop: 56,
@@ -310,6 +310,6 @@ export default async function HomePage() {
 
       {/* Footer */}
       <CommandCenterFooter />
-    </main>
+    </div>
   );
 }
