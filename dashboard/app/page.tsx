@@ -120,7 +120,19 @@ export default async function HomePage() {
   let error: string | null = null;
 
   try {
-    [pis, findings] = await Promise.all([api.getPIs(), api.getFindings()]);
+    const results = await Promise.allSettled([api.getPIs(), api.getFindings()]);
+    
+    if (results[0].status === "fulfilled") {
+      pis = results[0].value ?? [];
+    } else {
+      error = results[0].reason?.message ?? "Failed to load PI data";
+    }
+    
+    if (results[1].status === "fulfilled") {
+      findings = results[1].value ?? [];
+    } else {
+      error = error ?? results[1].reason?.message ?? "Failed to load findings";
+    }
   } catch (e) {
     error = e instanceof Error ? e.message : "Failed to load data";
   }
