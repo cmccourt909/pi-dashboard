@@ -215,7 +215,11 @@ export default async function HomePage() {
 
       {/* Lodestar AI Briefing Panel */}
       <div style={{ marginBottom: "var(--space-6, 24px)" }}>
-        <LodestarBriefing />
+        <LodestarBriefing
+          piId={currentPI?.name ?? ""}
+          featureKey="overview"
+          initialNarrative="Click 'Refresh analysis' to generate a portfolio briefing for this PI."
+        />
       </div>
 
       {/* KPI Strip */}

@@ -1,3 +1,5 @@
+"use client"
+
 import React from "react";
 import { AttentionFinding } from "./types";
 
@@ -116,3 +118,4 @@ export default function AttentionFindingCard({
     </article>
   );
 }
+
