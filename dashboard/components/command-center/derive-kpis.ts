@@ -7,6 +7,19 @@
 
 import type { OverviewKPIs } from "./types";
 
+/** Shape of a feature's PI completion entry from /api/features response. */
+export interface FeaturePICompletion {
+  pi_name: string;
+  done_pct: number;
+}
+
+/** Shape of a feature from /api/features response. */
+export interface FeatureData {
+  feature_key: string;
+  rag_status: string;
+  pi_completion: FeaturePICompletion[];
+}
+
 /** Shape of sprint data from /api/pis response. */
 export interface SprintData {
   jira_id: number;
@@ -62,13 +75,14 @@ export function deriveOverviewKPIs(
   piData: PIData | null | undefined,
   findings: Finding[] | null | undefined,
   forecastConfidence?: number | null,
+  features?: FeatureData[] | null,
 ): OverviewKPIs {
   return {
     sprintVelocity: deriveSprintVelocity(piData),
-    featuresOnTrack: deriveFeaturesOnTrack(piData),
+    featuresOnTrack: deriveFeaturesOnTrack(piData, features),
     activeBlockers: deriveActiveBlockers(findings),
     daysRemaining: deriveDaysRemaining(piData),
-    forecastConfidence: deriveForecastConfidence(forecastConfidence),
+    forecastConfidence: deriveForecastConfidence(forecastConfidence, piData),
   };
 }
 
@@ -91,8 +105,22 @@ function deriveSprintVelocity(
   }
 
   const value = activeSprint.done_issues ?? 0;
-  const planned = activeSprint.total_issues ?? 0;
-  const delta = planned > 0 ? value - planned : 0;
+
+  // Delta = active sprint velocity vs average of closed sprints
+  const closedSprints = piData.sprints.filter(
+    (s) => s.state === "closed" && (s.total_issues ?? 0) > 0,
+  );
+  let delta = 0;
+  if (closedSprints.length > 0) {
+    const avgClosed =
+      closedSprints.reduce((sum, s) => sum + (s.done_issues ?? 0), 0) /
+      closedSprints.length;
+    delta = Math.round(value - avgClosed);
+  } else {
+    // Fallback: compare done vs planned for active sprint
+    const planned = activeSprint.total_issues ?? 0;
+    delta = planned > 0 ? value - planned : 0;
+  }
 
   return { value, delta };
 }
@@ -106,21 +134,35 @@ function deriveSprintVelocity(
  */
 function deriveFeaturesOnTrack(
   piData: PIData | null | undefined,
+  features?: FeatureData[] | null,
 ): OverviewKPIs["featuresOnTrack"] {
+  // Prefer real feature data when available
+  if (features?.length) {
+    const piName = piData?.name;
+    const total = features.length;
+    const onTrack = features.filter((f) => {
+      const piEntry = piName
+        ? f.pi_completion?.find((p) => p.pi_name === piName)
+        : f.pi_completion?.[0];
+      return (piEntry?.done_pct ?? 0) >= ON_TRACK_THRESHOLD;
+    }).length;
+    // Delta: on-track vs expected (70% of features on track = healthy baseline)
+    const expected = Math.round(total * 0.7);
+    const delta = onTrack - expected;
+    return { onTrack, total, delta };
+  }
+
+  // Fallback: use sprint data as proxy
   if (!piData?.sprints?.length) {
     return { onTrack: 0, total: 0, delta: 0 };
   }
-
   const sprints = piData.sprints;
   const total = sprints.length;
   const onTrack = sprints.filter(
     (s) => (s.pct_complete ?? 0) >= ON_TRACK_THRESHOLD,
   ).length;
-
-  // Delta compares on-track count to half of total (baseline expectation)
   const baseline = Math.ceil(total / 2);
   const delta = onTrack - baseline;
-
   return { onTrack, total, delta };
 }
 
@@ -190,10 +232,17 @@ function deriveDaysRemaining(
  */
 function deriveForecastConfidence(
   forecastConfidence?: number | null,
+  piData?: PIData | null,
 ): OverviewKPIs["forecastConfidence"] {
-  if (forecastConfidence == null || isNaN(forecastConfidence)) {
-    return { percentage: 0 };
+  if (forecastConfidence != null && !isNaN(forecastConfidence)) {
+    return { percentage: Math.max(0, Math.min(100, forecastConfidence)) };
   }
 
-  return { percentage: Math.max(0, Math.min(100, forecastConfidence)) };
+  // Proxy: use PI pct_complete as a rough forecast confidence
+  // (better than showing 0% when no Monte Carlo data is available)
+  if (piData?.pct_complete != null) {
+    return { percentage: Math.round(piData.pct_complete) };
+  }
+
+  return { percentage: 0 };
 }

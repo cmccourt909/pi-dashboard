@@ -10,6 +10,7 @@ import QuickNavigationGrid, {
 } from "@/components/command-center/QuickNavigationGrid";
 import CommandCenterFooter from "@/components/command-center/CommandCenterFooter";
 import { deriveOverviewKPIs } from "@/components/command-center/derive-kpis";
+import type { FeatureData } from "@/components/command-center/derive-kpis";
 import type { PIData, Finding } from "@/lib/api";
 import type { AttentionFinding, TeamHealth, KPIMetric } from "@/components/command-center/types";
 import type { RecentFinding } from "@/components/command-center/RecentFindingsList";
@@ -117,19 +118,24 @@ function kpisToMetrics(
 export default async function HomePage() {
   let pis: PIData[] = [];
   let findings: Finding[] = [];
+  let features: FeatureData[] = [];
   let error: string | null = null;
-
   let lastSync: string | null = null;
 
   try {
-    const results = await Promise.allSettled([api.getPIs(), api.getFindings(), api.getSyncStatus()]);
-    
+    const results = await Promise.allSettled([
+      api.getPIs(),
+      api.getFindings(),
+      api.getSyncStatus(),
+      api.getFeatures(),
+    ]);
+
     if (results[0].status === "fulfilled") {
       pis = results[0].value ?? [];
     } else {
       error = results[0].reason?.message ?? "Failed to load PI data";
     }
-    
+
     if (results[1].status === "fulfilled") {
       findings = results[1].value ?? [];
     } else {
@@ -139,6 +145,10 @@ export default async function HomePage() {
     if (results[2].status === "fulfilled") {
       lastSync = results[2].value?.last_sync ?? null;
     }
+
+    if (results[3].status === "fulfilled") {
+      features = results[3].value ?? [];
+    }
   } catch (e) {
     error = e instanceof Error ? e.message : "Failed to load data";
   }
@@ -147,7 +157,7 @@ export default async function HomePage() {
   const currentPI: PIData | null = pis.length > 0 ? pis[0] : null;
 
   // Derive KPIs from API data
-  const overviewKPIs = deriveOverviewKPIs(currentPI, findings);
+  const overviewKPIs = deriveOverviewKPIs(currentPI, findings, null, features);
   const metrics = kpisToMetrics(overviewKPIs);
 
   // Map findings for child components
