@@ -5,6 +5,11 @@ __pycache__/
 *.pyc
 check2.py
 check.py
+check_db.py
+node_modules/
+northline-command-center-v2_1.html
+northline_stakeholder_analysis.html
+*.png
 .htpasswd
 output/
 frontend-state.json
