@@ -47,7 +47,9 @@ export default function LodestarBriefing({
   const [copySuccess, setCopySuccess] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
 
-  const sseUrl = `/api/pis/${piId}/features/${featureKey}/lodestar`;
+  const sseUrl = featureKey === "overview"
+    ? `/api/pis/${piId}/lodestar`
+    : `/api/pis/${piId}/features/${featureKey}/lodestar`;
 
   const startStream = useCallback(() => {
     // Close any existing connection
@@ -70,18 +72,28 @@ export default function LodestarBriefing({
     es.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        setState((prev) => ({
-          ...prev,
-          headline: data.headline ?? prev.headline,
-          narrative: data.narrative
-            ? prev.narrative + data.narrative
-            : prev.narrative,
-          version: data.version ?? prev.version,
-          lastUpdated: data.lastUpdated ?? prev.lastUpdated,
-          isLoading: false,
-        }));
+        if (data.type === "chunk" && data.text) {
+          setState((prev) => ({
+            ...prev,
+            narrative: prev.narrative + data.text,
+            isLoading: false,
+          }));
+        } else if (data.type === "meta" && data.promptVersion) {
+          setState((prev) => ({ ...prev, version: data.promptVersion }));
+        } else if (data.type === "done") {
+          es.close();
+          eventSourceRef.current = null;
+          setState((prev) => ({ ...prev, isLoading: false }));
+        } else if (data.type === "error") {
+          es.close();
+          eventSourceRef.current = null;
+          setState((prev) => ({
+            ...prev,
+            isLoading: false,
+            error: data.error ?? "Unable to load briefing.",
+          }));
+        }
       } catch {
-        // If not JSON, treat as raw narrative text
         setState((prev) => ({
           ...prev,
           narrative: prev.narrative + event.data,
@@ -89,12 +101,6 @@ export default function LodestarBriefing({
         }));
       }
     };
-
-    es.addEventListener("done", () => {
-      es.close();
-      eventSourceRef.current = null;
-      setState((prev) => ({ ...prev, isLoading: false }));
-    });
 
     es.onerror = () => {
       es.close();
@@ -137,8 +143,37 @@ export default function LodestarBriefing({
   };
 
   const handleGenerateSteerCo = () => {
-    // Placeholder action for SteerCo briefing generation
-    // Will be implemented in a future task
+    const date = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+    const narrative = state.narrative || "No briefing generated yet. Click 'Refresh analysis' first.";
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Northline Executive Briefing — ${date}</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 720px; margin: 48px auto; color: #0E0E1A; line-height: 1.6; }
+    h1 { font-size: 22px; font-weight: 700; color: #202670; margin-bottom: 4px; }
+    .meta { font-size: 12px; color: #847488; margin-bottom: 32px; }
+    .badge { display: inline-block; background: #4C4088; color: #fff; font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 999px; margin-bottom: 8px; }
+    h2 { font-size: 14px; font-weight: 700; color: #202670; margin: 24px 0 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+    p { font-size: 14px; margin: 0 0 12px; white-space: pre-wrap; }
+    .footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #847488; }
+    @media print { body { margin: 24px; } }
+  </style>
+</head>
+<body>
+  <div class="badge">Lodestar AI v${state.version} · Portfolio briefing</div>
+  <h1>Program Increment Executive Briefing</h1>
+  <div class="meta">Generated ${date} · Northline Delivery Intelligence</div>
+  <p>${narrative.replace(/\n/g, "<br/>")}</p>
+  <div class="footer">Powered by Lodestar AI · Northline Delivery Intelligence</div>
+  <script>window.onload = function(){ window.print(); }</script>
+</body>
+</html>`;
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
 
   return (
