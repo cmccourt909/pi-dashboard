@@ -64,6 +64,7 @@ export const api = {
   getPIs: () => fetchJSON("/api/pis"),
   getFeatures: () => fetchJSON("/api/features"),
   getFindings: () => fetchJSON("/api/findings"),
+  getSyncStatus: () => fetchJSON("/api/sync/status"),
 };
 
 export function healthToStatus(health: string) {

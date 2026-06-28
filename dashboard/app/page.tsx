@@ -119,8 +119,10 @@ export default async function HomePage() {
   let findings: Finding[] = [];
   let error: string | null = null;
 
+  let lastSync: string | null = null;
+
   try {
-    const results = await Promise.allSettled([api.getPIs(), api.getFindings()]);
+    const results = await Promise.allSettled([api.getPIs(), api.getFindings(), api.getSyncStatus()]);
     
     if (results[0].status === "fulfilled") {
       pis = results[0].value ?? [];
@@ -132,6 +134,10 @@ export default async function HomePage() {
       findings = results[1].value ?? [];
     } else {
       error = error ?? results[1].reason?.message ?? "Failed to load findings";
+    }
+
+    if (results[2].status === "fulfilled") {
+      lastSync = results[2].value?.last_sync ?? null;
     }
   } catch (e) {
     error = e instanceof Error ? e.message : "Failed to load data";
@@ -209,7 +215,7 @@ export default async function HomePage() {
 
       {/* Program Header */}
       <ProgramHeader
-        lastSyncTimestamp={currentPI?.end_date ?? null}
+        lastSyncTimestamp={lastSync}
         isSyncing={false}
       />
 

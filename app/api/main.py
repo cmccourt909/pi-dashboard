@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from sqlalchemy import select, func
 from app.api.routers.pis import router as pis_router
 from app.api.routers.features import router as features_router
 from app.api.routers.findings import router as findings_router
@@ -67,6 +68,19 @@ app.include_router(stakeholders_router)
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/sync/status")
+def sync_status():
+    """Returns the timestamp of the most recently updated issue, used as the last-sync indicator."""
+    from app.api.deps import get_session
+    from app.models import Issue
+    session = next(get_session())
+    try:
+        latest = session.scalar(select(func.max(Issue.updated_at)))
+        return {"last_sync": latest.isoformat() if latest else None}
+    finally:
+        session.close()
 
 
 @app.post("/api/seed-demo")

@@ -1,4 +1,5 @@
 /* Northline brand tokens — Inter loaded via next/font in layout.tsx */
+@import "tailwindcss";
 
 @theme {
   /* Brand */
