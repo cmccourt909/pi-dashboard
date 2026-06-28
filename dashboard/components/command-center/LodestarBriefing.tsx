@@ -47,7 +47,9 @@ export default function LodestarBriefing({
   const [copySuccess, setCopySuccess] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
 
-  const sseUrl = `/api/pis/${piId}/features/${featureKey}/lodestar`;
+  const sseUrl = featureKey === "overview"
+    ? `/api/pis/${piId}/lodestar`
+    : `/api/pis/${piId}/features/${featureKey}/lodestar`;
 
   const startStream = useCallback(() => {
     // Close any existing connection
@@ -70,18 +72,28 @@ export default function LodestarBriefing({
     es.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        setState((prev) => ({
-          ...prev,
-          headline: data.headline ?? prev.headline,
-          narrative: data.narrative
-            ? prev.narrative + data.narrative
-            : prev.narrative,
-          version: data.version ?? prev.version,
-          lastUpdated: data.lastUpdated ?? prev.lastUpdated,
-          isLoading: false,
-        }));
+        if (data.type === "chunk" && data.text) {
+          setState((prev) => ({
+            ...prev,
+            narrative: prev.narrative + data.text,
+            isLoading: false,
+          }));
+        } else if (data.type === "meta" && data.promptVersion) {
+          setState((prev) => ({ ...prev, version: data.promptVersion }));
+        } else if (data.type === "done") {
+          es.close();
+          eventSourceRef.current = null;
+          setState((prev) => ({ ...prev, isLoading: false }));
+        } else if (data.type === "error") {
+          es.close();
+          eventSourceRef.current = null;
+          setState((prev) => ({
+            ...prev,
+            isLoading: false,
+            error: data.error ?? "Unable to load briefing.",
+          }));
+        }
       } catch {
-        // If not JSON, treat as raw narrative text
         setState((prev) => ({
           ...prev,
           narrative: prev.narrative + event.data,
@@ -89,12 +101,6 @@ export default function LodestarBriefing({
         }));
       }
     };
-
-    es.addEventListener("done", () => {
-      es.close();
-      eventSourceRef.current = null;
-      setState((prev) => ({ ...prev, isLoading: false }));
-    });
 
     es.onerror = () => {
       es.close();

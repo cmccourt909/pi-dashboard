@@ -63,3 +63,45 @@ Rules:
 - Keep the entire response under 180 words.
 - Be direct, factual, and actionable.
 - Do not add extra sections or markdown formatting."""
+
+
+@dataclass
+class PortfolioPromptInput:
+    """Structured PI-level context for the portfolio briefing prompt."""
+    pi_name: str
+    total_issues: int
+    done_issues: int
+    pct_complete: float
+    critical_findings: int
+    blocked_issues: int
+    health: str
+    total_features: int
+    features_on_track: int
+
+
+def build_portfolio_prompt(input: PortfolioPromptInput) -> str:
+    """Build the LLM prompt for a PI-level portfolio briefing stream.
+
+    Generates a concise portfolio overview covering delivery status, risks,
+    and recommended actions for the current Program Increment.
+    """
+    at_risk = input.total_features - input.features_on_track
+    return f"""You are a delivery intelligence assistant. Generate a concise portfolio briefing for a Program Increment, structured into exactly three sections:
+
+Delivery Status:
+Risks & Blockers:
+Recommended Actions:
+
+Program Increment context:
+- PI: {input.pi_name}
+- Overall completion: {input.pct_complete:.1f}% ({input.done_issues}/{input.total_issues} issues done)
+- Health: {input.health}
+- Active blockers: {input.blocked_issues}
+- Critical findings: {input.critical_findings}
+- Features on track: {input.features_on_track}/{input.total_features} ({at_risk} at risk)
+
+Rules:
+- Use the three headers exactly as shown above.
+- Keep the entire response under 200 words.
+- Be direct, factual, and actionable for a program leader audience.
+- Do not add extra sections or markdown formatting."""
